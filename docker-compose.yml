@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user          # 数据库用户名
+      POSTGRES_PASSWORD: password  # 数据库密码
+      POSTGRES_DB: star_graph      # 数据库名称
+    ports:
+      - "5432:5432"                # 映射端口
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # 持久化数据
+    restart: unless-stopped
+
+volumes: 
+  postgres_data:

@@ -1,0 +1,80 @@
+这是一个nextjs项目，你是一个高级前端开发工程师，做一个付费视频平台，和论坛，和接单平台
+的后台管理系统
+
+每个管理菜单对应的页面，需要包含页面和接口
+包含管理新增删除编辑
+编辑新增使用抽屉的形式，
+比如用户管理，菜单管理等等
+
+
+
+
+学习平台需求
+
+
+
+3.论坛 后台审核管理系统
+
+b.管理端可进行删帖、删回复、置顶贴子
+
+e.贴文需可审核
+4.接单平台 富文本，图片文字视频，类似论坛，发布后管理员审核，通过后所有人可见，手机  和管理员留言，管理员对用户打电话，
+
+b.点击接单后，管理员在管理端进行审核，并从接单列表中进行选择接单者
+c.任务有：待发布（需管理员确认）、待接单、执行中、已完成几种状态
+d.管理员管理端可看到已存在的任务单（可进行发布、删除、置顶、隐藏、修改状态操作）、待发布的任务单列表、每个任务单后的接单备选人员，管理员可进行任务单指派
+e.发单者，发单后需进行奖金支付，支付完毕后可发单，单子处于待发布状态
+f.接单者完成任务后，点击完成任务按钮，可提交完成任务，管理员进行任务完成状态审核，确认完成后奖金将打到接单者平台账号中。
+g.用户在平台中可进行充值、提现操作，提现需收取10%手续费
+h.提现完成后，平台将扣除手续费的奖金支付给完成任务的用户
+5.游戏入口
+
+
+游戏题库管理
+游戏管理
+
+7.管理端需求
+a.管理员可进行添加用户账号、删除用户账号、冻结用户账号
+b.统计需求（人数、日活、充值金额）
+
+
+你开发时需要遵守的规则如下：
+1. 使用typescript开发
+2. 使用tailwindcss进行样式管理，需要对页面进行自适应，适配pc端低分辨率和移动端
+3. 使用中文说话
+4. 尽可能的封装组件，减少重复代码
+5. 使用语义化标签,进行seo优化
+6. 代码加入中文注释
+7. 数据库使用prisma开发，import prisma from '@/lib/prisma';
+8. 使用@/utils/response.ts进行接口的ResponseUtil进行接口数据返回
+9. 不使用阴影，字体不要粗体， 极简风格，这很重要
+
+10. 每个页面使用AdminLayout组件包裹起来，AdminLayout组件在src/app/components/layout/AdminLayout.tsx
+11. 接口请求使用/src/utils/request.ts，demo:
+  await request('/course-categories', {
+            method: 'POST',
+            body: JSON.stringify(values)
+        });
+ 注意接口路径不要写错，比如/course-categories，不要写成/api/course-categories ，没有api前缀 
+
+12. 上传文件接口使用/src/app/api/common/upload/route.ts
+
+
+加密禁用bcrypt，使用argon2
+接口请求使用/src/utils/request.ts
+接口使用：next/server
+
+接口参数，使用Promise包裹：比如{ params }: { params: { id: string } }改成{ params }: Promise<{ params: { id: string } }>    
+
+
+UI框架使用antd框架
+图标库使用react-icons
+token使用cookie，不使用localStorage
+
+如果你了解了，请回复“我了解了”
+
+前端用户信息存储，使用cookie存储和token，token使用jwt
+
+提示消息组件和确认弹窗使用sweetalert2
+
+取消任务，超过10分钟内全退，超过10分钟，扣除10%的积分
