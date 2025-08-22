@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { ResponseUtil } from '@/utils/response';
-import { CourseLevel,CourseStatus } from '@prisma/client';
+import { ShortStatus } from '@prisma/client';
 import { verifyAuth } from '@/utils/auth';
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const categoryId = searchParams.get('categoryId');
     const directionId = searchParams.get('directionId');
-    const level = searchParams.get('level');
     const keyword = searchParams.get('keyword');
     const sort = searchParams.get('sort') || 'latest';
     const page = parseInt(searchParams.get('page') || '1');
@@ -21,7 +20,6 @@ export async function GET(request: NextRequest) {
       isHidden: false,
       ...(categoryId ? { categoryId: parseInt(categoryId) } : {}),
       ...(directionId ? { directionId: parseInt(directionId) } : {}),
-      ...(level ? { level: level as CourseLevel } : {}),
       // 关键词搜索 - 支持标题、描述、讲师字段的模糊搜索
       ...(keyword ? {
         OR: [
@@ -59,21 +57,21 @@ export async function GET(request: NextRequest) {
       case 'viewCount':
         orderBy = { viewCount: 'desc' };
         break;
-      case 'rating':
-        orderBy = { ratingScore: 'desc' };
+      case 'like':
+        orderBy = { likeCount: 'desc' };
         break;
-      case 'price':
-        orderBy = { totalDuration: 'asc' }; // 由于没有价格字段，这里暂时用时长代替
+      case 'duration':
+        orderBy = { totalDuration: 'asc' };
         break;
       default:
         orderBy = { createdAt: 'desc' };
     }
 
     // 获取总数
-    const total = await prisma.course.count({ where });
+    const total = await prisma.short.count({ where });
 
     // 获取分页数据
-    const courses = await prisma.course.findMany({
+    const shorts = await prisma.short.findMany({
       where,
       orderBy,
       include: {
@@ -92,25 +90,25 @@ export async function GET(request: NextRequest) {
       take: pageSize,
     });
 
-    // 为每个课程添加学习人数统计
-    const coursesWithStudentCount = await Promise.all(
-      courses.map(async (course) => {
+    // 为每个短剧添加学习人数统计
+    const shortsWithStudentCount = await Promise.all(
+      shorts.map(async (short) => {
         try {
-          const uniqueUsers = await prisma.courseOrder.groupBy({
+          const uniqueUsers = await prisma.shortsOrder.groupBy({
             by: ['userId'],
           where: {
-            courseId: course.id,
+            shortsId: short.id,
           },
         });
         
         return {
-          ...course,
+          ...short,
           studentCount: uniqueUsers.length,
         };
         } catch (error) {
-          console.error(`获取课程 ${course.id} 学生数失败:`, error);
+          console.error(`获取短剧 ${short.id} 学生数失败:`, error);
           return {
-            ...course,
+            ...short,
             studentCount: 0,
           };
         }
@@ -118,18 +116,18 @@ export async function GET(request: NextRequest) {
     );
     
     return ResponseUtil.success({
-      list: coursesWithStudentCount,
+      list: shortsWithStudentCount,
       total,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     });
   } catch (error) {
-    console.error('获取课程列表失败:', error);
+    console.error('获取短剧列表失败:', error);
     console.error('错误详情:', {
       message: error instanceof Error ? error.message : '未知错误',
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return ResponseUtil.error('获取课程列表失败');
+    return ResponseUtil.error('获取短剧列表失败');
   }
 }

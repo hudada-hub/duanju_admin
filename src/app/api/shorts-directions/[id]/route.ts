@@ -13,7 +13,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return ResponseUtil.error('方向名称不能为空');
     }
 
-    const direction = await prisma.courseDirection.update({
+    const direction = await prisma.shortsDirection.update({
       where: { id: parseInt(id) },
       data: { name }
     });
@@ -30,15 +30,15 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const { id } = await params;
 
     // 检查是否有关联的短剧
-    const courseCount = await prisma.course.count({
+    const shortCount = await prisma.short.count({
       where: { directionId: parseInt(id) }
     });
 
-    if (courseCount > 0) {
+    if (shortCount > 0) {
       return ResponseUtil.error('该方向下有关联的短剧，无法删除');
     }
 
-    await prisma.courseDirection.delete({
+    await prisma.shortsDirection.delete({
       where: { id: parseInt(id) }
     });
 

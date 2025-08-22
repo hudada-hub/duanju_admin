@@ -5,7 +5,7 @@ import { ResponseUtil } from "@/utils/response";
 // 获取短剧分类列表
 export async function GET() {
   try {
-    const categories = await prisma.courseCategory.findMany({
+    const categories = await prisma.shortsCategory.findMany({
       orderBy: {
         createdAt: 'desc'
       }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return ResponseUtil.error('分类名称不能为空');
     }
 
-    const category = await prisma.courseCategory.create({
+    const category = await prisma.shortsCategory.create({
       data: {
         name
       }

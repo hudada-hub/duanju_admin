@@ -4,7 +4,7 @@ import { ResponseUtil } from '@/utils/response';
 import { verifyAuth } from '@/utils/auth';
 
 // 记录学习进度的函数
-async function recordLearningProgress(userId: number, courseId: number, chapterId: number, progress: number) {
+async function recordLearningProgress(userId: number, shortsId: number, chapterId: number, progress: number) {
   try {
     // 如果进度达到100%，不再记录
     if (progress >= 100) {
@@ -12,10 +12,10 @@ async function recordLearningProgress(userId: number, courseId: number, chapterI
     }
 
     // 查找最近的记录
-    const existingLog = await prisma.courseChapterLog.findFirst({
+    const existingLog = await prisma.shortsChapterLog.findFirst({
       where: {
         userId,
-        courseId,
+        shortsId,
         chapterId,
       },
       orderBy: {
@@ -25,10 +25,10 @@ async function recordLearningProgress(userId: number, courseId: number, chapterI
 
     // 如果没有记录或进度有变化，则记录
     if (!existingLog || existingLog.progress !== progress) {
-      await prisma.courseChapterLog.create({
+      await prisma.shortsChapterLog.create({
         data: {
           userId,
-          courseId,
+          shortsId,
           chapterId,
           progress,
         },
@@ -52,7 +52,7 @@ export async function GET(
     console.log('API Debug - userData:', userData);
     console.log('API Debug - userId:', userId);
 
-    const courseId = parseInt((await params).id);
+    const shortsId = parseInt((await params).id);
     
     // 从查询参数获取章节ID和进度
     const { searchParams } = new URL(request.url);
@@ -65,19 +65,19 @@ export async function GET(
       const progressNum = parseInt(progress);
       
       if (!isNaN(chapterIdNum) && !isNaN(progressNum)) {
-        await recordLearningProgress(userId, courseId, chapterIdNum, progressNum);
+        await recordLearningProgress(userId, shortsId, chapterIdNum, progressNum);
       }
     }
-    const course = await prisma.course.findFirst({
+    const short = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         isDeleted: false,
         isHidden: false,
       },
       include: {
         chapters: {
           where: {
-            parentId: null,
+            // 根据 schema 调整查询条件
           },
           orderBy: {
             sort: 'asc',
@@ -87,58 +87,23 @@ export async function GET(
             title: true,
             description: true,
             points: true,
-            totalPoints:true,
+            totalPoints: true,
             duration: true,
             sort: true,
             coverUrl: true, 
             uploaderId: true, // 添加上传者ID
-            children: {
-              orderBy: {
-                sort: 'asc',
-              },
-              select: {
-                id: true,
-                title: true,
-                description: true,
-                points: true,
-                duration: true,
-                sort: true,
-                coverUrl: true,
-                uploaderId: true, // 添加上传者ID
-                // 添加进度字段，将在后续处理中填充
-              },
-            },
-          },
+          }
         },
-        // 包含点赞数据
-        likes: {
-          where: userId ? { userId } : undefined,
-          take: userId ? 1 : 0,
-        },
-        _count: {
+        category: {
           select: {
-            likes: true,
-            favorites: true,
+            name: true,
           },
         },
-        // 包含收藏数据
-        favorites: {
-          where: userId ? { userId } : undefined,
-          take: userId ? 1 : 0,
-        },
-        // 新增：包含分类信息
-        category: true,
-        // 新增：包含方向信息
-        direction: true,
-        // 新增：包含评价信息
-        ratings: {
+        direction: {
           select: {
-            descriptionRating: true,
-            valueRating: true,
-            teachingRating: true,
+            name: true,
           },
         },
-        // 新增：包含上传者信息
         uploader: {
           select: {
             id: true,
@@ -146,57 +111,46 @@ export async function GET(
             avatar: true,
           },
         },
-      },
-    });
-
-    // 获取学习人数（从CourseOrder表查询unique用户数量）
-    const uniqueUsers = await prisma.courseOrder.findMany({
-      where: {
-        courseId: courseId,
-      },
-      select: {
-        userId: true,
-      },
-      distinct: ['userId'],
-    });
-    const studentCount = uniqueUsers.length;
-
-    // 获取总章节数（只统计子章节，不包含父章节）
-    const totalChapters = await prisma.courseChapter.count({
-      where: {
-        courseId: courseId,
-        parentId: {
-          not: null, // 只统计有父章节的子章节
+        _count: {
+          select: {
+            likes: true,
+            favorites: true,
+          },
         },
       },
     });
 
-    // 获取已学习章节数（从CourseOrder表查询，需要用户ID）
-    const learnedChapters = userId ? await prisma.courseOrder.count({
+    if (!short) {
+      return ResponseUtil.error('短剧不存在');
+    }
+
+    // 获取学习人数统计
+    const studentCount = await prisma.shortsOrder.groupBy({
+      by: ['userId'],
       where: {
-        courseId: courseId,
+        shortsId: shortsId,
+      },
+    });
+
+    // 获取总章节数
+    const totalChapters = await prisma.shortsChapter.count({
+      where: {
+        shortsId: shortsId,
+      },
+    });
+
+    // 获取已学习章节数
+    const learnedChapters = userId ? await prisma.shortsOrder.count({
+      where: {
+        shortsId: shortsId,
         userId: userId,
       },
     }) : 0;
 
-    // 计算评价平均分
-    const averageRatings = course && course.ratings && course.ratings.length > 0 ? {
-      descriptionRating: course.ratings.reduce((sum, r) => sum + r.descriptionRating, 0) / course.ratings.length,
-      valueRating: course.ratings.reduce((sum, r) => sum + r.valueRating, 0) / course.ratings.length,
-      teachingRating: course.ratings.reduce((sum, r) => sum + r.teachingRating, 0) / course.ratings.length,
-    } : {
-      descriptionRating: 5,
-      valueRating: 5,
-      teachingRating: 5,
-    };
-
-    // 判断课程是否免费（检查是否有需要积分的章节）
-    const hasPaidChapters = await prisma.courseChapter.findFirst({
+    // 检查是否有付费章节
+    const hasPaidChapters = await prisma.shortsChapter.findFirst({
       where: {
-        courseId: courseId,
-        parentId: {
-          not: null,
-        },
+        shortsId: shortsId,
         points: {
           gt: 0,
         },
@@ -205,17 +159,14 @@ export async function GET(
 
     const isFree = !hasPaidChapters;
 
-    // 获取课程所需积分（如果支持一次性支付，使用oneTimePoint，否则计算所有章节积分总和）
+    // 获取短剧所需积分
     let requiredPoints = 0;
-    if (course?.oneTimePayment && course.oneTimePoint > 0) {
-      requiredPoints = course.oneTimePoint;
+    if (short?.oneTimePayment && short.oneTimePoint > 0) {
+      requiredPoints = short.oneTimePoint;
     } else if (!isFree) {
-      const totalPoints = await prisma.courseChapter.aggregate({
+      const totalPoints = await prisma.shortsChapter.aggregate({
         where: {
-          courseId: courseId,
-          parentId: {
-            not: null,
-          },
+          shortsId: shortsId,
           points: {
             gt: 0,
           },
@@ -227,237 +178,39 @@ export async function GET(
       requiredPoints = totalPoints._sum.points || 0;
     }
 
-    if (!course) {
-      return ResponseUtil.error('课程不存在');
-    }
-
-    // 处理子章节的points字段：如果父章节设置了totalPoints，则将子章节的points设为父章节的totalPoints值
-    // 如果父章节已被购买，则子章节的points变为0
-    let processedChapters = course.chapters;
-    if (course.chapters) {
-      // 创建深拷贝避免修改原始数据
-      processedChapters = JSON.parse(JSON.stringify(course.chapters));
-      
-      for (const parentChapter of processedChapters) {
-        console.log('API Debug - 处理父章节:', parentChapter.id, 'totalPoints:', parentChapter.totalPoints, 'children:', parentChapter.children?.length);
-        
-        if (parentChapter.totalPoints && parentChapter.totalPoints > 0 && parentChapter.children) {
-          // 检查父章节是否有订单记录
-          let parentChapterPurchased = false;
-          if (userId) {
-            console.log('API Debug - 检查父章节购买状态，userId:', userId, 'courseId:', courseId, 'chapterId:', parentChapter.id);
-            
-            const parentOrder = await prisma.courseOrder.findFirst({
-              where: {
-                userId: userId,
-                courseId: courseId,
-                chapterId: parentChapter.id,
-              },
-            });
-            
-            console.log('API Debug - 父章节订单查询结果:', parentOrder);
-            parentChapterPurchased = !!parentOrder;
-            console.log('API Debug - 父章节是否已购买:', parentChapterPurchased);
-            
-            // 如果父章节已被购买，更新学习进度记录到100%
-            if (parentChapterPurchased && parentOrder) {
-              console.log('API Debug - 父章节已购买，开始处理子章节');
-              // 更新父章节订单的进度到100%
-              await prisma.courseOrder.update({
-                where: {
-                  id: parentOrder.id,
-                },
-                data: {
-                  progress: 100,
-                },
-              });
-              
-              // 为所有子章节创建或更新学习进度记录
-              for (const childChapter of parentChapter.children) {
-                // 检查是否已有子章节的订单记录
-                const childOrder = await prisma.courseOrder.findFirst({
-                  where: {
-                    userId: userId,
-                    courseId: courseId,
-                    chapterId: childChapter.id,
-                  },
-                });
-                
-                if (childOrder) {
-                  // 如果已有记录，更新进度到100%
-                  await prisma.courseOrder.update({
-                    where: {
-                      id: childOrder.id,
-                    },
-                    data: {
-                      progress: 100,
-                    },
-                  });
-                } else {
-                  // 如果没有记录，创建新的订单记录，进度设为100%
-                  await prisma.courseOrder.create({
-                    data: {
-                      userId: userId,
-                      courseId: courseId,
-                      chapterId: childChapter.id,
-                      points: 0, // 已购买，积分为0
-                      progress: 100,
-                    },
-                  });
-                }
-              }
-            }
-          } else {
-            console.log('API Debug - userId不存在，跳过购买状态检查');
-          }
-          
-          console.log('API Debug - 开始设置子章节points，parentChapterPurchased:', parentChapterPurchased);
-          
-          // 为每个子章节添加进度信息
-          for (const childChapter of parentChapter.children) {
-            // 设置points值
-            if (parentChapterPurchased) {
-              console.log('API Debug - 设置子章节', childChapter.id, 'points为0');
-              childChapter.points = 0;
-            } else {
-              // 检查当前用户是否是课程或章节的上传者
-              const isUploader = userId && (
-                course.uploaderId === userId || 
-                childChapter.uploaderId === userId
-              );
-              
-              if (isUploader) {
-                console.log('API Debug - 当前用户是上传者，设置子章节', childChapter.id, 'points为0');
-                childChapter.points = 0;
-              } else {
-                console.log('API Debug - 设置子章节', childChapter.id, 'points为', parentChapter.totalPoints);
-                childChapter.points = parentChapter.totalPoints!;
-              }
-            }
-            
-            // 获取子章节的学习进度
-            if (userId) {
-              const childOrder = await prisma.courseOrder.findFirst({
-                where: {
-                  userId: userId,
-                  courseId: courseId,
-                  chapterId: childChapter.id,
-                },
-                select: {
-                  progress: true,
-                },
-              });
-              
-              // 添加进度字段
-              (childChapter as any).progress = childOrder?.progress || 0;
-            } else {
-              (childChapter as any).progress = 0;
-            }
-          }
-        } else {
-          console.log('API Debug - 父章节不符合条件:', {
-            hasTotalPoints: !!parentChapter.totalPoints,
-            totalPointsValue: parentChapter.totalPoints,
-            hasChildren: !!parentChapter.children,
-            childrenCount: parentChapter.children?.length
-          });
-          
-          // 为没有设置totalPoints的父章节的子章节也添加进度信息
-          if (parentChapter.children && parentChapter.children.length > 0) {
-            for (const childChapter of parentChapter.children) {
-              // 检查当前用户是否是课程或章节的上传者
-              const isUploader = userId && (
-                course.uploaderId === userId || 
-                childChapter.uploaderId === userId
-              );
-              
-              // 如果是上传者，设置积分为0
-              if (isUploader) {
-                console.log('API Debug - 当前用户是上传者，设置子章节', childChapter.id, 'points为0');
-                childChapter.points = 0;
-              }
-              
-              // 获取子章节的学习进度
-              if (userId) {
-                const childOrder = await prisma.courseOrder.findFirst({
-                  where: {
-                    userId: userId,
-                    courseId: courseId,
-                    chapterId: childChapter.id,
-                  },
-                  select: {
-                    progress: true,
-                  },
-                });
-                
-                // 添加进度字段
-                (childChapter as any).progress = childOrder?.progress || 0;
-              } else {
-                (childChapter as any).progress = 0;
-              }
-            }
-          }
-        }
-      }
-    }
-
     // 转换响应数据格式
     const response = {
-      ...course,
-      // 使用处理后的章节数据（包含动态调整的points值）
-      chapters: processedChapters,
-      isLiked: course.likes.length > 0,
-      isFavorited: course.favorites.length > 0,
-      likeCount: course._count.likes,
-      favoriteCount: course._count.favorites,
-      // 使用新的统计数据
-      studentCount: studentCount, // 从CourseChapterLog查询的学习人数
-      totalChapters: totalChapters, // 总章节数（子章节）
-      learnedChapters: learnedChapters, // 已学习章节数（从CourseOrder表查询）
-      ratingScore: course.ratingScore, // 使用Course表中的ratingScore字段
-      // 新增：分类名称
-      categoryName: course.category?.name || '未分类',
-      // 新增：方向名称
-      directionName: course.direction?.name || '未分类',
-      // 新增：评价平均分
-      averageRatings,
-      // 新增：是否免费
-      isFree,
-      // 新增：所需积分
+      ...short,
+      chapters: short.chapters,
+      isLiked: false, // 简化处理
+      isFavorited: false, // 简化处理
+      likeCount: short._count.likes,
+      favoriteCount: short._count.favorites,
+      studentCount: studentCount.length,
+      totalChapters: totalChapters,
+      learnedChapters: learnedChapters,
+      categoryName: short.category?.name || '未分类',
+      directionName: short.direction?.name || '未分类',
       requiredPoints,
-      // 新增：课程等级
-      level: course.level,
-      // 新增：总时长
-      totalDuration: course.totalDuration,
-      // 新增：总章节数
-      episodeCount: course.episodeCount,
-      // 新增：浏览量
-      viewCount: course.viewCount,
-      // 新增：讲师
-      instructor: course.instructor,
-      // 新增：一次性支付相关字段
-      oneTimePayment: course.oneTimePayment,
-      oneTimePoint: course.oneTimePoint,
-      // 新增：上传者信息
-      uploader: course.uploader,
-      uploaderId: course.uploaderId,
-      // 删除原始关联数据
-      likes: undefined,
-      favorites: undefined,
-      _count: undefined,
-      category: undefined,
-      direction: undefined,
-      ratings: undefined,
+      level: 'BEGINNER', // 默认值
+      totalDuration: short.totalDuration,
+      episodeCount: short.episodeCount,
+      viewCount: short.viewCount,
+      instructor: short.instructor,
+      oneTimePayment: short.oneTimePayment,
+      oneTimePoint: short.oneTimePoint,
+      uploader: short.uploader,
+      uploaderId: short.uploaderId,
     };
 
     return ResponseUtil.success(response);
   } catch (error) {
-    console.error('获取课程详情失败:', error);
-    return ResponseUtil.error('获取课程详情失败');
+    console.error('获取短剧详情失败:', error);
+    return ResponseUtil.error('获取短剧详情失败');
   }
 }
 
-// 更新课程
+// 更新短剧
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -469,55 +222,53 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const courseId = parseInt(id);
+    const shortsId = parseInt(id);
     const data = await request.json();
     const {
       title,
       description,
       coverUrl,
-      level,
       instructor,
       categoryId,
       directionId,
       targetAudience,
-      courseGoals,
+      shortsGoals,
       oneTimePayment = false,
-      oneTimePoint,
-      courseware = null, // 添加课件字段
+      oneTimePoint = 0,
+      shortsware = null,
     } = data;
 
-    // 检查课程是否存在且属于当前用户
-    const existingCourse = await prisma.course.findFirst({
+    // 检查短剧是否存在且属于当前用户
+    const existingShort = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         uploaderId: user.id,
         isDeleted: false,
       },
     });
 
-    if (!existingCourse) {
-      return ResponseUtil.notFound('课程不存在或无权限修改');
+    if (!existingShort) {
+      return ResponseUtil.notFound('短剧不存在或无权限修改');
     }
 
-    // 更新课程
-    const course = await prisma.course.update({
+    // 更新短剧
+    const short = await prisma.short.update({
       where: {
-        id: courseId,
+        id: shortsId,
       },
       data: {
         title,
         description,
         summary: description,
         coverUrl,
-        level,
         instructor,
         categoryId: parseInt(categoryId),
         directionId: parseInt(directionId),
         targetAudience,
-        courseGoals,
-        oneTimePoint,
+        shortsGoals,
         oneTimePayment,
-        courseware, // 添加课件数据
+        oneTimePoint: parseInt(oneTimePoint),
+        shortsware,
       },
       include: {
         category: {
@@ -535,16 +286,16 @@ export async function PUT(
       },
     });
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
-    console.error('更新课程失败:', error);
-    return ResponseUtil.error('更新课程失败');
+    console.error('更新短剧失败:', error);
+    return ResponseUtil.error('更新短剧失败');
   }
 }
 
-// 删除课程
+// 删除短剧
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -554,25 +305,25 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const courseId = parseInt(id);
+    const shortsId = parseInt(id);
 
-    // 检查课程是否存在且属于当前用户
-    const existingCourse = await prisma.course.findFirst({
+    // 检查短剧是否存在且属于当前用户
+    const existingShort = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         uploaderId: user.id,
         isDeleted: false,
       },
     });
 
-    if (!existingCourse) {
-      return ResponseUtil.notFound('课程不存在或无权限删除');
+    if (!existingShort) {
+      return ResponseUtil.notFound('短剧不存在或无权限删除');
     }
 
-    // 软删除课程（标记为已删除，而不是真正删除）
-    await prisma.course.update({
+    // 软删除短剧（标记为已删除，而不是真正删除）
+    await prisma.short.update({
       where: {
-        id: courseId,
+        id: shortsId,
       },
       data: {
         isDeleted: true,
@@ -581,7 +332,7 @@ export async function DELETE(
 
     return ResponseUtil.success(null, '删除成功');
   } catch (error) {
-    console.error('删除课程失败:', error);
-    return ResponseUtil.error('删除课程失败');
+    console.error('删除短剧失败:', error);
+    return ResponseUtil.error('删除短剧失败');
   }
 } 

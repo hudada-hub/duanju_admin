@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { ResponseUtil } from '@/utils/response';
 import { verifyAuth } from '@/utils/auth';
 
-// 获取课程章节列表
+// 获取短剧章节列表
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,13 +15,13 @@ export async function GET(
     }
 
     const { id } = await params;
-    const courseId = parseInt(id);
+    const shortsId = parseInt(id);
 
     // 获取章节列表（包含层级结构）
-    const chapters = await prisma.courseChapter.findMany({
+    const chapters = await prisma.shortsChapter.findMany({
       where: {
-        courseId: courseId,
-        parentId: null, // 只获取父章节
+        shortsId: shortsId,
+        // 根据 schema 调整查询条件
       },
       include: {
         uploader: {
@@ -29,20 +29,6 @@ export async function GET(
             id: true,
             nickname: true,
             avatar: true,
-          },
-        },
-        children: {
-          include: {
-            uploader: {
-              select: {
-                id: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-          orderBy: {
-            sort: 'asc',
           },
         },
       },
@@ -76,29 +62,28 @@ export async function POST(
       description,
       videoUrl,
       coverUrl,
-      courseId,
+      shortsId,
       points,
       sort,
-      parentId,
       duration,
       selectTotalPoints, // 新增
       totalPoints, // 新增
     } = data;
 
-    // 验证课程所有权
-    const course = await prisma.course.findFirst({
+    // 验证短剧所有权
+    const short = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         uploaderId: user.id,
       },
     });
 
-    if (!course) {
-      return ResponseUtil.notFound('课程不存在或无权限操作'+ user.id);
+    if (!short) {
+      return ResponseUtil.notFound('短剧不存在或无权限操作'+ user.id);
     }
 
     // 创建章节
-    const chapter = await prisma.courseChapter.create({
+    const chapter = await prisma.shortsChapter.create({
       data: {
         title,
         description,
@@ -106,8 +91,7 @@ export async function POST(
         coverUrl,
         points: points || 0,
         sort: sort || 0, // 如果没有提供排序，默认为0
-        courseId,
-        parentId,
+        shortsId,
         uploaderId: user.id,
         duration,
         selectTotalPoints: selectTotalPoints || false, // 新增
@@ -124,17 +108,15 @@ export async function POST(
       },
     });
 
-    // 如果是子章节（有parentId），更新课程的episodeCount
-    if (parentId) {
-      await prisma.course.update({
-        where: { id: courseId },
-        data: {
-          episodeCount: {
-            increment: 1,
-          },
+    // 更新短剧的episodeCount
+    await prisma.short.update({
+      where: { id: shortsId },
+      data: {
+        episodeCount: {
+          increment: 1,
         },
-      });
-    }
+      },
+    });
 
     return ResponseUtil.success(chapter);
   } catch (error) {

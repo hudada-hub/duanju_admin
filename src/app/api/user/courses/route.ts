@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { ResponseUtil } from '@/utils/response';
 import { verifyAuth } from '@/utils/auth';
 
-// 获取用户创建的课程列表
+// 获取用户创建的短剧列表
 export async function GET(request: NextRequest) {
   try {
     const { user } = await verifyAuth(request);
@@ -17,12 +17,11 @@ export async function GET(request: NextRequest) {
     const keyword = searchParams.get('keyword') || '';
     const categoryId = searchParams.get('categoryId');
     const directionId = searchParams.get('directionId');
-    const level = searchParams.get('level');
 
     // 构建查询条件
     const where: any = {
-      uploaderId: user.id, // 只获取当前用户创建的课程
-      isDeleted: false, // 排除已删除的课程
+      uploaderId: user.id, // 只获取当前用户创建的短剧
+      isDeleted: false, // 排除已删除的短剧
     };
 
     // 关键词搜索
@@ -44,16 +43,11 @@ export async function GET(request: NextRequest) {
       where.directionId = parseInt(directionId);
     }
 
-    // 难度筛选
-    if (level) {
-      where.level = level;
-    }
-
     // 查询总数
-    const total = await prisma.course.count({ where });
+    const total = await prisma.short.count({ where });
 
-    // 分页查询课程
-    const courses = await prisma.course.findMany({
+    // 分页查询短剧
+    const shorts = await prisma.short.findMany({
       where,
       include: {
         category: {
@@ -77,7 +71,7 @@ export async function GET(request: NextRequest) {
     });
 
     return ResponseUtil.success({
-      data: courses,
+      data: shorts,
       pagination: {
         page,
         pageSize,
@@ -85,12 +79,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('获取课程列表失败:', error);
-    return ResponseUtil.error('获取课程列表失败');
+    console.error('获取短剧列表失败:', error);
+    return ResponseUtil.error('获取短剧列表失败');
   }
 }
 
-// 创建课程
+// 创建短剧
 export async function POST(request: NextRequest) {
   try {
     const { user } = await verifyAuth(request);
@@ -103,33 +97,31 @@ export async function POST(request: NextRequest) {
       title,
       description,
       coverUrl,
-      level,
       instructor,
       categoryId,
       directionId,
       targetAudience,
-      courseGoals,
+      shortsGoals,
       oneTimePayment = false, // 添加一次性支付字段
       oneTimePoint = 0, // 添加一次性支付积分字段
-      courseware = null, // 添加课件字段
+      shortsware = null, // 添加课件字段
     } = data;
 
-    // 创建课程
-    const course = await prisma.course.create({
+    // 创建短剧
+    const short = await prisma.short.create({
       data: {
         title,
         description,
         summary: description, // 使用描述作为简介
         coverUrl,
-        level,
         instructor,
         categoryId: parseInt(categoryId),
         directionId: parseInt(directionId),
         targetAudience,
-        courseGoals,
+        shortsGoals,
         oneTimePayment,
         oneTimePoint: parseInt(oneTimePoint), // 添加一次性支付积分
-        courseware, // 添加课件数据
+        shortsware, // 添加课件数据
         uploaderId: user.id,
       },
       include: {
@@ -148,14 +140,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
-    console.error('创建课程失败:', error);
-    return ResponseUtil.error('创建课程失败');
+    console.error('创建短剧失败:', error);
+    return ResponseUtil.error('创建短剧失败');
   }
 }
 
-// 更新课程
+// 更新短剧
 export async function PUT(request: NextRequest) {
   try {
     const { user } = await verifyAuth(request);
@@ -169,19 +161,18 @@ export async function PUT(request: NextRequest) {
       title,
       description,
       coverUrl,
-      level,
       instructor,
       categoryId,
       directionId,
       targetAudience,
-      courseGoals,
+      shortsGoals,
       oneTimePayment = false, // 添加一次性支付字段
       oneTimePoint = 0, // 添加一次性支付积分字段
-      courseware = null, // 添加课件字段
+      shortsware = null, // 添加课件字段
     } = data;
 
-    // 检查课程是否存在且属于当前用户
-    const existingCourse = await prisma.course.findFirst({
+    // 检查短剧是否存在且属于当前用户
+    const existingShort = await prisma.short.findFirst({
       where: {
         id: parseInt(id),
         uploaderId: user.id,
@@ -189,12 +180,12 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    if (!existingCourse) {
-      return ResponseUtil.notFound('课程不存在或无权限修改');
+    if (!existingShort) {
+      return ResponseUtil.notFound('短剧不存在或无权限修改');
     }
 
-    // 更新课程
-    const course = await prisma.course.update({
+    // 更新短剧
+    const short = await prisma.short.update({
       where: {
         id: parseInt(id),
       },
@@ -203,15 +194,14 @@ export async function PUT(request: NextRequest) {
         description,
         summary: description, // 使用描述作为简介
         coverUrl,
-        level,
         instructor,
         categoryId: parseInt(categoryId),
         directionId: parseInt(directionId),
         targetAudience,
-        courseGoals,
+        shortsGoals,
         oneTimePayment,
         oneTimePoint: parseInt(oneTimePoint), // 添加一次性支付积分
-        courseware, // 添加课件数据
+        shortsware, // 添加课件数据
       },
       include: {
         category: {
@@ -229,9 +219,9 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
-    console.error('更新课程失败:', error);
-    return ResponseUtil.error('更新课程失败');
+    console.error('更新短剧失败:', error);
+    return ResponseUtil.error('更新短剧失败');
   }
 } 

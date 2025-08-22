@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       userId, 
-      courseId,
+      shortsId,
       chapterId,
       parentId,
       page: rawPage,
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     // 构建查询条件
     const where: any = {};
     if (userId) where.userId = Number(userId);
-    if (courseId) where.courseId = Number(courseId);
+    if (shortsId) where.shortsId = Number(shortsId);
     if (chapterId !== undefined) {
       if (chapterId === null) {
         where.chapterId = null;
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     // 获取总数
-    const total = await prisma.courseComment.count({ where });
+    const total = await prisma.shortsComment.count({ where });
 
     // 计算总页数
     const totalPages = Math.ceil(total / pageSize);
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const skip = (currentPage - 1) * pageSize;
 
     // 获取分页数据
-    const comments = await prisma.courseComment.findMany({
+    const comments = await prisma.shortsComment.findMany({
       where,
       include: {
         user: {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             avatar: true
           }
         },
-        course: {
+        short: {
           select: {
             id: true,
             title: true
@@ -142,7 +142,7 @@ export async function DELETE(request: Request) {
     }
 
     // 删除评论及其所有回复
-    await prisma.courseComment.deleteMany({
+    await prisma.shortsComment.deleteMany({
       where: {
         OR: [
           { id: { in: commentIds } },

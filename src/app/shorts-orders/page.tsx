@@ -13,7 +13,7 @@ import { CosImage } from '../components/common/CosImage';
 interface CourseOrder {
   id: string;
   userId: number;
-  courseId: number;
+  shortsId: number;
   chapterId: number;
   points: number;
   progress: number;
@@ -25,7 +25,7 @@ interface CourseOrder {
     avatar: string;
     phone: string;
   };
-  course: {
+  shorts: {
     id: number;
     title: string;
     coverUrl: string;
@@ -127,8 +127,11 @@ export default function CourseOrdersPage() {
   };
 
   // 查看短剧详情
-  const handleViewCourse = (courseId: number) => {
-    router.push(`/courses/${courseId}`);
+  const handleViewCourse = (shortsId: number) => {
+    const frontUrl = process.env.NEXT_PUBLIC_FRONT_BASE_URL;
+    if (frontUrl) {
+      router.push(`/shorts/${shortsId}`);
+    }
   };
 
   // 查看用户详情
@@ -170,14 +173,14 @@ export default function CourseOrdersPage() {
     },
     {
       title: '短剧信息',
-      key: 'course',
+      key: 'shorts',
       width: '20%',
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <div className="flex items-center space-x-2">
-            <CosImage path={record.course.coverUrl} width={40} height={30} />
+            <CosImage path={record.shorts.coverUrl} width={40} height={30} />
             <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{record.course.title}</div>
+              <div className="font-medium truncate">{record.shorts.title}</div>
               <div className="text-xs text-gray-500">第{record.chapter.id}章: {record.chapter.title}</div>
             </div>
           </div>
@@ -185,7 +188,7 @@ export default function CourseOrdersPage() {
             type="link" 
             size="small" 
             icon={<EyeOutlined />}
-            onClick={() => handleViewCourse(record.course.id)}
+            onClick={() => handleViewCourse(record.shorts.id)}
           >
             查看短剧
           </Button>
@@ -313,7 +316,7 @@ export default function CourseOrdersPage() {
                 </Form.Item>
               </Col>
               <Col span={6}>
-                <Form.Item name="courseId" label="短剧ID">
+                <Form.Item name="shortsId" label="短剧ID">
                   <Input placeholder="请输入短剧ID" />
                 </Form.Item>
               </Col>

@@ -152,14 +152,14 @@ export default function DashboardPage() {
     const routeMap: { [key: string]: string } = {
       '文章总数': '/articles',
       '文章评论': '/article-comments',
-      '短剧总数': '/courses',
+      '短剧总数': '/shorts',
       '短剧订单': '/course-orders',
       '帖子总数': '/forum-posts',
       '任务总数': '/tasks',
       '今日可结算任务': '/task-settlement',
       '今日注册': '/users',
       '今日活跃': '/users',
-      '今日学习': '/courses'
+      '今日学习': '/shorts'
     };
 
     const route = routeMap[statName];

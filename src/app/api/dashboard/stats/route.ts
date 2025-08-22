@@ -34,65 +34,18 @@ export async function GET() {
     // 文章相关统计
     const [
       articleCount,
-      articleCommentCount
     ] = await Promise.all([
       // 文章总数
       prisma.article.count({
         where: { status: 'PUBLISHED' }
       }),
-      // 文章评论总数
-      prisma.articleComment.count()
     ]);
 
     // 短剧相关统计
-    const [
-      courseCount,
-      courseOrderCount,
-      todayStudyCount
-    ] = await Promise.all([
-      // 短剧总数
-      prisma.course.count(),
-      // 短剧订单总数
-      prisma.courseOrder.count(),
-      // 今日学习人数（通过短剧订单更新时间统计）
-      prisma.courseOrder.count({
-        where: { updatedAt: { gte: today } }
-      })
-    ]);
+   
+   
 
-    // 论坛相关统计
-    const [
-      postCount,
-      todayPostCount
-    ] = await Promise.all([
-      // 帖子总数
-      prisma.forumPost.count({
-        where: { status: 'PUBLISHED' }
-      }),
-      // 今日发帖数
-      prisma.forumPost.count({
-        where: {
-          status: 'PUBLISHED',
-          createdAt: { gte: today }
-        }
-      })
-    ]);
 
-    // 任务相关统计
-    const [
-      taskCount,
-      todaySettledTasks
-    ] = await Promise.all([
-      // 任务总数
-      prisma.task.count(),
-      // 今日可结算任务数（已完成状态的任务）
-      prisma.task.count({
-        where: { 
-          status: 'COMPLETED',
-          updatedAt: { gte: today }
-        }
-      })
-    ]);
 
     // 财务相关统计
     const [
@@ -149,57 +102,9 @@ export async function GET() {
           change: 0,
           trend: 'up'
         },
-        {
-          name: '文章评论',
-          value: articleCommentCount,
-          change: 0,
-          trend: 'up'
-        },
-        // 短剧相关统计
-        {
-          name: '短剧总数',
-          value: courseCount,
-          change: 0,
-          trend: 'up'
-        },
-        {
-          name: '短剧订单',
-          value: courseOrderCount,
-          change: 0,
-          trend: 'up'
-        },
-        {
-          name: '今日学习',
-          value: todayStudyCount,
-          change: 0,
-          trend: 'up'
-        },
-        // 论坛相关统计
-        {
-          name: '帖子总数',
-          value: postCount,
-          change: 0,
-          trend: 'up'
-        },
-        {
-          name: '今日发帖',
-          value: todayPostCount,
-          change: 0,
-          trend: 'up'
-        },
-        // 任务相关统计
-        {
-          name: '任务总数',
-          value: taskCount,
-          change: 0,
-          trend: 'up'
-        },
-        {
-          name: '今日可结算任务',
-          value: todaySettledTasks,
-          change: 0,
-          trend: 'up'
-        },
+       
+      
+        
         // 财务相关统计
         {
           name: '今日充值',

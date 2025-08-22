@@ -168,10 +168,10 @@ export default function CourseCommentsPage() {
   };
 
   // 查看短剧详情
-  const handleViewCourse = (courseId: number) => {
+  const handleViewCourse = (shortsId: number) => {
     const frontUrl = process.env.NEXT_PUBLIC_FRONT_BASE_URL;
     if (frontUrl) {
-      window.open(`${frontUrl}/courses/${courseId}`, '_blank');
+      window.open(`${frontUrl}/shorts/${shortsId}`, '_blank');
     }
   };
 

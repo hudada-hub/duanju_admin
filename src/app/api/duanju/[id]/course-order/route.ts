@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { ResponseUtil } from '@/utils/response';
 import { verifyAuth } from '@/utils/auth';
 
-// 检查用户是否已购买整个课程
+// 检查用户是否已购买整个短剧
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,27 +14,27 @@ export async function GET(
       return ResponseUtil.unauthorized('请先登录');
     }
 
-    const courseId = parseInt((await params).id);
+    const shortsId = parseInt((await params).id);
     
-    // 检查是否有整个课程的订单记录
-    const courseOrder = await prisma.courseOrder.findFirst({
+    // 检查是否有整个短剧的订单记录
+    const shortsOrder = await prisma.shortsOrder.findFirst({
       where: {
-        courseId: courseId,
+        shortsId: shortsId,
         userId: user.id,
         oneTimePayment: true, // 一次性支付订单
       },
     });
 
     return ResponseUtil.success({
-      hasPurchased: !!courseOrder,
+      hasPurchased: !!shortsOrder,
     });
   } catch (error) {
-    console.error('检查课程购买状态失败:', error);
-    return ResponseUtil.error('检查课程购买状态失败');
+    console.error('检查短剧购买状态失败:', error);
+    return ResponseUtil.error('检查短剧购买状态失败');
   }
 }
 
-// 创建整个课程的购买订单
+// 创建整个短剧的购买订单
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,41 +45,51 @@ export async function POST(
       return ResponseUtil.unauthorized('请先登录');
     }
 
-    const courseId = parseInt((await params).id);
+    const shortsId = parseInt((await params).id);
     
-    // 获取课程信息
-    const course = await prisma.course.findFirst({
+    // 获取短剧信息
+    const short = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         isDeleted: false,
         isHidden: false,
       },
     });
 
-    if (!course) {
-      return ResponseUtil.notFound('课程不存在');
+    if (!short) {
+      return ResponseUtil.notFound('短剧不存在');
     }
 
-    if (!course.oneTimePayment || course.oneTimePoint <= 0) {
-      return ResponseUtil.error('该课程不支持一次性支付');
+    if (!short.oneTimePayment || short.oneTimePoint <= 0) {
+      return ResponseUtil.error('该短剧不支持一次性支付');
+    }
+
+    // 获取用户信息（包含积分）
+    const userInfo = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { points: true }
+    });
+
+    if (!userInfo) {
+      return ResponseUtil.error('用户信息不存在');
     }
 
     // 检查用户积分是否足够
-    if (user.points < course.oneTimePoint) {
-      return ResponseUtil.error(`积分不足，需要 ${course.oneTimePoint} 积分，当前只有 ${user.points} 积分`);
+    if (userInfo.points < short.oneTimePoint) {
+      return ResponseUtil.error(`积分不足，需要 ${short.oneTimePoint} 积分，当前只有 ${userInfo.points} 积分`);
     }
 
     // 检查是否已经购买过
-    const existingOrder = await prisma.courseOrder.findFirst({
+    const existingOrder = await prisma.shortsOrder.findFirst({
       where: {
-        courseId: courseId,
+        shortsId: shortsId,
         userId: user.id,
         oneTimePayment: true,
       },
     });
 
     if (existingOrder) {
-      return ResponseUtil.error('您已经购买过此课程');
+      return ResponseUtil.error('您已经购买过此短剧');
     }
 
     // 扣除用户积分
@@ -87,29 +97,29 @@ export async function POST(
       where: { id: user.id },
       data: {
         points: {
-          decrement: course.oneTimePoint,
+          decrement: short.oneTimePoint,
         },
       },
     });
 
-    // 创建课程订单
-    const courseOrder = await prisma.courseOrder.create({
+    // 创建短剧订单
+    const shortsOrder = await prisma.shortsOrder.create({
       data: {
         userId: user.id,
-        courseId: courseId,
-        points: course.oneTimePoint,
+        shortsId: shortsId,
+        points: short.oneTimePoint,
         oneTimePayment: true,
-        oneTimePoint: course.oneTimePoint,
+        oneTimePoint: short.oneTimePoint,
         progress: 0,
       },
     });
 
     return ResponseUtil.success({
       success: true,
-      orderId: courseOrder.id,
+      orderId: shortsOrder.id,
     });
   } catch (error) {
-    console.error('创建课程订单失败:', error);
-    return ResponseUtil.error('创建课程订单失败');
+    console.error('创建短剧订单失败:', error);
+    return ResponseUtil.error('创建短剧订单失败');
   }
 } 

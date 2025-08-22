@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
     };
 
     // 查询总数
-    const total = await prisma.course.count({ where });
+    const total = await prisma.short.count({ where });
 
     // 查询数据
-    const courses = await prisma.course.findMany({
+    const shorts = await prisma.short.findMany({
       where,
       include: {
         category: true,
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     });
 
     return ResponseUtil.success({
-      items: courses,
+      items: shorts,
       total,
     });
   } catch (error) {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const course = await prisma.course.create({
+    const short = await prisma.short.create({
       data: {
         ...data,
         tags: data.tags || [], // 确保tags是数组
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
     return ResponseUtil.error('创建短剧失败');
   } 

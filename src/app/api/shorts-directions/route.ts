@@ -5,7 +5,7 @@ import { ResponseUtil } from "@/utils/response";
 // 获取短剧方向列表
 export async function GET() {
   try {
-    const directions = await prisma.courseDirection.findMany({
+    const directions = await prisma.shortsDirection.findMany({
       orderBy: {
         createdAt: 'desc'
       }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return ResponseUtil.error('方向名称不能为空');
     }
 
-    const direction = await prisma.courseDirection.create({
+    const direction = await prisma.shortsDirection.create({
       data: {
         name
       }

@@ -53,11 +53,11 @@ const menuItems: MenuItem[] = [
     icon: VideoCameraIcon,
     resource: 'COURSE',
     children: [
-      { name: '短剧管理', href: '/courses', resource: 'COURSE' },
-      { name: '短剧分类', href: '/course-categories', resource: 'COURSE_CATEGORY' },
-      { name: '短剧方向', href: '/course-directions', resource: 'COURSE_DIRECTION' },
-      { name: '短剧评论', href: '/course-comments', resource: 'COURSE_COMMENT' },
-      { name: '短剧订单', href: '/course-orders', resource: 'COURSE_ORDER' },
+      { name: '短剧管理', href: '/shorts', resource: 'COURSE' },
+      { name: '短剧分类', href: '/shorts-categories', resource: 'COURSE_CATEGORY' },
+      { name: '短剧方向', href: '/shorts-directions', resource: 'COURSE_DIRECTION' },
+      { name: '短剧评论', href: '/shorts-comments', resource: 'COURSE_COMMENT' },
+      { name: '短剧订单', href: '/shorts-orders', resource: 'COURSE_ORDER' },
     ]
   },
  

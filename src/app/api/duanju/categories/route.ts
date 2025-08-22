@@ -4,7 +4,7 @@ import { ResponseUtil } from '@/utils/response';
 
 export async function GET(request: NextRequest) {
   try {
-    const categories = await prisma.courseCategory.findMany({
+    const categories = await prisma.shortsCategory.findMany({
       orderBy: {
         id: 'asc',
       },
@@ -12,6 +12,6 @@ export async function GET(request: NextRequest) {
     
     return ResponseUtil.success(categories);
   } catch (error) {
-    return ResponseUtil.error('获取课程分类失败');
+    return ResponseUtil.error('获取短剧分类失败');
   }
 } 

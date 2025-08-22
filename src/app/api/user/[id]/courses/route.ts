@@ -21,8 +21,8 @@ export async function GET(
       return ResponseUtil.unauthorized('未登录');
     }
 
-    // 获取用户发布的课程
-    const courses = await prisma.course.findMany({
+    // 获取用户发布的短剧
+    const shorts = await prisma.short.findMany({
       where: {
         uploaderId: userId,
         isDeleted: false
@@ -35,13 +35,10 @@ export async function GET(
         createdAt: true,
         updatedAt: true,
         status: true,
-        _count: {
-          select: {
-            chapters: true,
-            favorites: true,
-            ratings: true
-          }
-        }
+        viewCount: true,
+        likeCount: true,
+        favoriteCount: true,
+        episodeCount: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -49,26 +46,27 @@ export async function GET(
     });
 
     // 格式化数据
-    const formattedCourses = courses.map(course => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      coverUrl: course.coverUrl,
-      createdAt: course.createdAt.toISOString(),
-      updatedAt: course.updatedAt.toISOString(),
-      status: course.status,
-      chapterCount: course._count.chapters,
-      favoriteCount: course._count.favorites,
-      ratingCount: course._count.ratings
+    const formattedShorts = shorts.map(short => ({
+      id: short.id,
+      title: short.title,
+      description: short.description,
+      coverUrl: short.coverUrl,
+      createdAt: short.createdAt.toISOString(),
+      updatedAt: short.updatedAt.toISOString(),
+      status: short.status,
+      viewCount: short.viewCount,
+      likeCount: short.likeCount,
+      favoriteCount: short.favoriteCount,
+      episodeCount: short.episodeCount
     }));
 
     return ResponseUtil.success({
-      list: formattedCourses,
-      total: formattedCourses.length
+      list: formattedShorts,
+      total: formattedShorts.length
     });
 
   } catch (error) {
-    console.error('获取用户课程失败:', error);
-    return ResponseUtil.error('获取用户课程失败');
+    console.error('获取用户短剧失败:', error);
+    return ResponseUtil.error('获取用户短剧失败');
   }
 } 

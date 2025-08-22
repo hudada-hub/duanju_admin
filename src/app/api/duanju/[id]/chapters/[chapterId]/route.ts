@@ -15,7 +15,7 @@ export async function PUT(
     }
 
     const { id, chapterId: chapterIdStr } = await params;
-    const courseId = parseInt(id);
+    const shortsId = parseInt(id);
     const chapterId = parseInt(chapterIdStr);
     const data = await request.json();
     const {
@@ -30,23 +30,23 @@ export async function PUT(
       totalPoints, // 新增
     } = data;
 
-    // 验证课程所有权
-    const course = await prisma.course.findFirst({
+    // 验证短剧所有权
+    const short = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         uploaderId: user.id,
       },
     });
 
-    if (!course) {
-      return ResponseUtil.notFound('课程不存在或无权限操作');
+    if (!short) {
+      return ResponseUtil.notFound('短剧不存在或无权限操作');
     }
 
     // 验证章节是否存在
-    const existingChapter = await prisma.courseChapter.findFirst({
+    const existingChapter = await prisma.shortsChapter.findFirst({
       where: {
         id: chapterId,
-        courseId: courseId,
+        shortsId: shortsId,
       },
     });
 
@@ -55,7 +55,7 @@ export async function PUT(
     }
 
     // 更新章节
-    const chapter = await prisma.courseChapter.update({
+    const chapter = await prisma.shortsChapter.update({
       where: {
         id: chapterId,
       },
@@ -100,26 +100,26 @@ export async function DELETE(
     }
 
     const { id, chapterId: chapterIdStr } = await params;
-    const courseId = parseInt(id);
+    const shortsId = parseInt(id);
     const chapterId = parseInt(chapterIdStr);
 
-    // 验证课程所有权
-    const course = await prisma.course.findFirst({
+    // 验证短剧所有权
+    const short = await prisma.short.findFirst({
       where: {
-        id: courseId,
+        id: shortsId,
         uploaderId: user.id,
       },
     });
 
-    if (!course) {
-      return ResponseUtil.notFound('课程不存在或无权限操作');
+    if (!short) {
+      return ResponseUtil.notFound('短剧不存在或无权限操作');
     }
 
     // 验证章节是否存在
-    const existingChapter = await prisma.courseChapter.findFirst({
+    const existingChapter = await prisma.shortsChapter.findFirst({
       where: {
         id: chapterId,
-        courseId: courseId,
+        shortsId: shortsId,
       },
     });
 
@@ -127,35 +127,22 @@ export async function DELETE(
       return ResponseUtil.notFound('章节不存在');
     }
     
-    // 检查是否有子章节
-    const hasChildren = await prisma.courseChapter.findFirst({
-      where: {
-        parentId: chapterId,
-      },
-    });
-
-    if (hasChildren) {
-      return ResponseUtil.error('请先删除所有子章节');
-    }
-    
     // 删除章节
-    await prisma.courseChapter.delete({
+    await prisma.shortsChapter.delete({
       where: {
         id: chapterId,
       },
     });
 
-    // 如果是子章节（有parentId），减少课程的episodeCount
-    if (existingChapter.parentId) {
-      await prisma.course.update({
-        where: { id: courseId },
-        data: {
-          episodeCount: {
-            decrement: 1,
-          },
+    // 减少短剧的episodeCount
+    await prisma.short.update({
+      where: { id: shortsId },
+      data: {
+        episodeCount: {
+          decrement: 1,
         },
-      });
-    }
+      },
+    });
     
     return ResponseUtil.success(null, '删除成功');
   } catch (error) {

@@ -20,7 +20,7 @@ import AdminLayout from '../components/layout/AdminLayout';
 import { FileUpload } from '@/components/ui/upload';
 import { CosImage } from '../components/common/CosImage';
 
-interface Course {
+interface Short {
   id: number;
   title: string;
   coverUrl: string;
@@ -67,7 +67,7 @@ interface Direction {
 }
 
 // 新增课程弹窗使用的课程数据类型
-interface CourseForModal {
+interface ShortForModal {
   id?: number;
   title: string;
   instructor: string;
@@ -86,12 +86,12 @@ interface CourseForModal {
   courseware: any[];
 }
 
-export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
+export default function ShortsPage() {
+  const [shorts, setShorts] = useState<Short[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingShort, setEditingShort] = useState<Short | null>(null);
   const [form] = Form.useForm();
   const [categories, setCategories] = useState<Category[]>([]);
   const [directions, setDirections] = useState<Direction[]>([]);
@@ -99,20 +99,20 @@ export default function CoursesPage() {
   const [pageSize, setPageSize] = useState(10);
   const [searchKeyword, setSearchKeyword] = useState('');
   
-  // 新增课程相关状态
-  const [addCourseModalVisible, setAddCourseModalVisible] = useState(false);
-  const [editingCourseForModal, setEditingCourseForModal] = useState<CourseForModal | null>(null);
+  // 新增短剧相关状态
+  const [addShortModalVisible, setAddShortModalVisible] = useState(false);
+  const [editingShortForModal, setEditingShortForModal] = useState<ShortForModal | null>(null);
   
   // 管理章节相关状态
   const [chapterModalVisible, setChapterModalVisible] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [selectedShortId, setSelectedShortId] = useState<number | null>(null);
 
   // 获取短剧列表
-  const fetchCourses = async (page = currentPage, size = pageSize, keyword = searchKeyword) => {
+  const fetchShorts = async (page = currentPage, size = pageSize, keyword = searchKeyword) => {
     setLoading(true);
     try {
-      const res = await request(`/courses?page=${page}&pageSize=${size}&keyword=${keyword}`);
-      setCourses(res.data.items);
+      const res = await request(`/shorts?page=${page}&pageSize=${size}&keyword=${keyword}`);
+      setShorts(res.data.items);
       setTotal(res.data.total);
     } catch (error) {
       console.error('获取短剧列表失败:', error);
@@ -124,7 +124,7 @@ export default function CoursesPage() {
   // 获取分类列表
   const fetchCategories = async () => {
     try {
-      const res = await request('/course-categories');
+      const res = await request('/shorts-categories');
       setCategories(res.data);
     } catch (error) {
       console.error('获取分类列表失败:', error);
@@ -134,7 +134,7 @@ export default function CoursesPage() {
   // 获取方向列表
   const fetchDirections = async () => {
     try {
-      const res = await request('/course-directions');
+      const res = await request('/shorts-directions');
       setDirections(res.data);
     } catch (error) {
       console.error('获取方向列表失败:', error);
@@ -142,14 +142,14 @@ export default function CoursesPage() {
   };
 
   useEffect(() => {
-    fetchCourses();
+    fetchShorts();
     fetchCategories();
     fetchDirections();
   }, []);
 
   // 打开抽屉进行编辑
-  const handleEdit = (record: Course) => {
-    setEditingCourse(record);
+  const handleEdit = (record: Short) => {
+    setEditingShort(record);
     form.setFieldsValue({
       ...record,
       tags: record.tags.join(','), // 将数组转换为逗号分隔的字符串
@@ -165,22 +165,22 @@ export default function CoursesPage() {
 
   // 打开抽屉进行新增
   const handleAdd = () => {
-    setEditingCourse(null);
+    setEditingShort(null);
     form.resetFields();
     form.setFieldValue('coverUrl', []); // 确保清空封面
     setDrawerVisible(true);
   };
 
-  // 新增课程处理函数
-  const handleAddCourse = () => {
-    setEditingCourseForModal(null);
-    setAddCourseModalVisible(true);
+  // 新增短剧处理函数
+  const handleAddShort = () => {
+    setEditingShortForModal(null);
+    setAddShortModalVisible(true);
   };
 
-  // 编辑课程处理函数（使用AddCourseModal）
-  const handleEditCourse = (record: Course) => {
+  // 编辑短剧处理函数（使用AddCourseModal）
+  const handleEditShort = (record: Short) => {
     // 转换Course对象为AddCourseModal期望的格式
-    const courseForModal: CourseForModal = {
+    const shortForModal: ShortForModal = {
       id: record.id,
       title: record.title,
       instructor: record.instructor,
@@ -198,19 +198,19 @@ export default function CoursesPage() {
       oneTimePoint: 0, // 默认值
       courseware: [] // 默认空数组
     };
-    setEditingCourseForModal(courseForModal);
-    setAddCourseModalVisible(true);
+    setEditingShortForModal(shortForModal);
+    setAddShortModalVisible(true);
   };
 
-  // 关闭新增课程弹窗
-  const handleCloseAddCourseModal = () => {
-    setAddCourseModalVisible(false);
-    setEditingCourseForModal(null);
+  // 关闭新增短剧弹窗
+  const handleCloseAddShortModal = () => {
+    setAddShortModalVisible(false);
+    setEditingShortForModal(null);
   };
 
-  // 课程操作成功后的回调
-  const handleCourseSuccess = () => {
-    fetchCourses(); // 刷新课程列表
+  // 短剧操作成功后的回调
+  const handleShortSuccess = () => {
+    fetchShorts(); // 刷新课程列表
   };
 
   // 删除短剧
@@ -229,10 +229,10 @@ export default function CoursesPage() {
 
     if (result.isConfirmed) {
       try {
-        await request(`/courses/${id}`, {
+        await request(`/shorts/${id}`, {
           method: 'DELETE'
         });
-        await fetchCourses();
+        await fetchShorts();
         Swal.fire('成功', '短剧已删除', 'success');
       } catch (error: any) {
         Swal.fire('错误', error.message || '删除失败', 'error');
@@ -241,15 +241,15 @@ export default function CoursesPage() {
   };
 
   // 管理章节处理函数
-  const handleManageChapters = (courseId: number) => {
-    setSelectedCourseId(courseId);
+  const handleManageChapters = (shortId: number) => {
+    setSelectedShortId(shortId);
     setChapterModalVisible(true);
   };
 
   // 关闭章节管理弹窗
   const handleCloseChapterModal = () => {
     setChapterModalVisible(false);
-    setSelectedCourseId(null);
+    setSelectedShortId(null);
   };
 
   // 提交表单
@@ -272,26 +272,26 @@ export default function CoursesPage() {
         return Swal.fire('错误', '请上传短剧封面', 'error');
       }
       
-      if (editingCourse) {
+      if (editingShort) {
         // 编辑
-        await request(`/courses/${editingCourse.id}`, {
+        await request(`/shorts/${editingShort.id}`, {
           method: 'PUT',
           body: JSON.stringify(values)
         });
       } else {
         // 新增
-        await request('/courses', {
+        await request('/shorts', {
           method: 'POST',
           body: JSON.stringify(values)
         });
       }
       setDrawerVisible(false);
-      await fetchCourses();
+      await fetchShorts();
       const Swal = (await import('sweetalert2')).default;
-      Swal.fire('成功', `${editingCourse ? '更新' : '创建'}成功`, 'success');
+      Swal.fire('成功', `${editingShort ? '更新' : '创建'}成功`, 'success');
     } catch (error: any) {
       const Swal = (await import('sweetalert2')).default;
-      Swal.fire('错误', error.message || `${editingCourse ? '更新' : '创建'}失败`, 'error');
+      Swal.fire('错误', error.message || `${editingShort ? '更新' : '创建'}失败`, 'error');
     }
   };
 
@@ -379,14 +379,14 @@ export default function CoursesPage() {
       key: 'action',
       width: 400, // 增加宽度以容纳新按钮
       fixed: 'right' as const,
-      render: (_: any, record: Course) => (
+      render: (_: any, record: Short) => (
         <Space>
           <Button 
             type="link"
             onClick={() => {
               const frontUrl = process.env.NEXT_PUBLIC_FRONT_BASE_URL;
               if (frontUrl) {
-                window.open(`${frontUrl}/courses/${record.id}`, '_blank');
+                window.open(`${frontUrl}/shorts/${record.id}`, '_blank');
               }
             }}
           >
@@ -401,7 +401,7 @@ export default function CoursesPage() {
           <Button 
             type="link" 
             icon={<EditOutlined />}
-            onClick={() => handleEditCourse(record)}
+            onClick={() => handleEditShort(record)}
           >
             编辑
           </Button>
@@ -430,7 +430,7 @@ export default function CoursesPage() {
                 onSearch={(value) => {
                   setSearchKeyword(value);
                   setCurrentPage(1);
-                  fetchCourses(1, pageSize, value);
+                  fetchShorts(1, pageSize, value);
                 }}
                 style={{ width: 200 }}
               />
@@ -440,15 +440,15 @@ export default function CoursesPage() {
             <Button 
               type="primary" 
               icon={<PlusOutlined />}
-              onClick={handleAddCourse}
+              onClick={handleAddShort}
             >
-              新增课程
+              新增短剧
             </Button>
           </div>
 
           <Table
             columns={columns}
-            dataSource={courses}
+            dataSource={shorts}
             rowKey="id"
             loading={loading}
             pagination={{
@@ -460,14 +460,14 @@ export default function CoursesPage() {
               onChange: (page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
-                fetchCourses(page, size);
+                fetchShorts(page, size);
               },
             }}
           />
 
           {/* 原有的编辑抽屉 */}
           <Drawer
-            title={editingCourse ? '编辑短剧' : '新增短剧'}
+            title={editingShort ? '编辑短剧' : '新增短剧'}
             open={drawerVisible}
             onClose={() => setDrawerVisible(false)}
             width={720}
@@ -654,17 +654,17 @@ export default function CoursesPage() {
 
           {/* 新增课程弹窗 */}
           <AddCourseModal
-            visible={addCourseModalVisible}
-            onClose={handleCloseAddCourseModal}
-            editingCourse={editingCourseForModal}
-            onSuccess={handleCourseSuccess}
+            visible={addShortModalVisible}
+            onClose={handleCloseAddShortModal}
+            editingCourse={editingShortForModal}
+            onSuccess={handleShortSuccess}
           />
 
           {/* 章节管理弹窗 */}
           <ChapterModal
             open={chapterModalVisible}
             onCancel={handleCloseChapterModal}
-            courseId={selectedCourseId || 0}
+            courseId={selectedShortId || 0}
           />
         </Card>
       </div>

@@ -4,7 +4,7 @@ import { ResponseUtil } from '@/utils/response';
 
 export async function GET(request: NextRequest) {
   try {
-    const directions = await prisma.courseDirection.findMany({
+    const directions = await prisma.shortsDirection.findMany({
       orderBy: {
         id: 'asc',
       },
@@ -12,6 +12,6 @@ export async function GET(request: NextRequest) {
     
     return ResponseUtil.success(directions);
   } catch (error) {
-    return ResponseUtil.error('获取课程方向失败');
+    return ResponseUtil.error('获取短剧方向失败');
   }
 } 
