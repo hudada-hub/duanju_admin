@@ -177,11 +177,7 @@ export async function PUT(request: NextRequest) {
       instructor,
       categoryId,
       directionId,
-      targetAudience,
-      shortsGoals,
-      oneTimePayment = false, // 添加一次性支付字段
-      oneTimePoint = 0, // 添加一次性支付积分字段
-      shortsware = null, // 添加课件字段
+  
     } = data;
 
     // 检查短剧是否存在且属于当前用户

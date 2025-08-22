@@ -60,10 +60,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
     } else {
       form.resetFields();
       setCoverUrl('');
-      // setCoursewareList([]); // 已移除课件功能
-      // setOneTimePayment(false); // 已移除一次性支付
-      // setIsFree(false); // 已移除免费设置
-      // 重置Upload组件
+     
       if (uploadRef.current) {
         uploadRef.current.fileList = [];
       }
@@ -185,6 +182,12 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
             listType="picture-card"
             maxCount={1}
             accept=".jpg,.jpeg,.png"
+            fileList={coverUrl ? [{
+              uid: '-1',
+              name: 'cover.jpg',
+              status: 'done',
+              url: coverUrl,
+            }] : []}
             onChange={(info) => {
               console.log(info);
               if (info.file.status === 'done') {
@@ -211,6 +214,8 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
                   position: 'top-end',
                   toast: true
                 });
+              } else if (info.file.status === 'removed') {
+                setCoverUrl('');
               }
             }}
             onRemove={() => {

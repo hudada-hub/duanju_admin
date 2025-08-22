@@ -19,6 +19,7 @@ import ChapterModal from './components/ChapterModal';
 import AdminLayout from '../components/layout/AdminLayout';
 import { FileUpload } from '@/components/ui/upload';
 import { CosImage } from '../components/common/CosImage';
+import {ShortStatus} from '@prisma/client';
 
 interface Short {
   id: number;
@@ -28,7 +29,7 @@ interface Short {
   description: string;
   instructor: string;
   viewCount: number;
- 
+  isFree: boolean;
   status: 'COMPLETED' | 'ONGOING';
   episodeCount: number;
   totalDuration: number;
@@ -67,12 +68,9 @@ interface ShortForModal {
   description: string;
   categoryId?: number;
   directionId?: number;
-
   coverUrl: string;
-
-  oneTimePayment: boolean;
-  oneTimePoint: number;
-  courseware: any[];
+  status: ShortStatus;
+  isFree?: boolean;
 }
 
 export default function ShortsPage() {
@@ -200,12 +198,9 @@ export default function ShortsPage() {
       description: record.description,
       categoryId: record.category?.id,
       directionId: record.direction?.id,
-   
       coverUrl: record.coverUrl,
-  
-      oneTimePayment: false, // 默认值
-      oneTimePoint: 0, // 默认值
-      courseware: [] // 默认空数组
+      status: record.status,
+      isFree: record.isFree,
     };
     setEditingShortForModal(shortForModal);
     setAddShortModalVisible(true);
@@ -327,9 +322,53 @@ export default function ShortsPage() {
       ),
     },
     {
-      title: '导演',
-      dataIndex: 'instructor',
+      title: '置顶',
+      dataIndex: 'isTop',
       width: 100,
+      render: (isTop: boolean, record: Short) => (
+        <Switch
+          checked={isTop}
+          onChange={async (checked: boolean) => {
+            try {
+              await request(`/shorts/${record.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ 
+                  title: record.title,
+                  coverUrl: record.coverUrl,
+                  description: record.description,
+                  instructor: record.instructor,
+                  directionId: record.direction.id,
+                  categoryId: record.category.id,
+                  status: record.status,
+                  tags: record.tags,
+                  isFree: record.isFree,
+                  isTop: checked,
+                  isHidden: record.isHidden
+                })
+              });
+              // 刷新列表
+              fetchShorts();
+              Swal.fire({
+                icon: 'success',
+                title: '更新成功',
+                showConfirmButton: false,
+                timer: 1500,
+                position: 'top-end',
+                toast: true
+              });
+            } catch (error) {
+              Swal.fire({
+                icon: 'error',
+                title: '更新失败',
+                showConfirmButton: false,
+                timer: 1500,
+                position: 'top-end',
+                toast: true
+              });
+            }
+          }}
+        />
+      ),
     },
     {
       title: '分类',

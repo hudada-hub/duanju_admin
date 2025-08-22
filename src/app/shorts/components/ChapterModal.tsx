@@ -327,10 +327,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       title: '积分设置',
       key: 'pointsInfo',
       render: (_: any, record: ChapterData) => {
-        // 如果短剧是一次性支付，显示无需设置积分
-        if (courseInfo?.oneTimePayment) {
-          return <span className="text-gray-500">无需设置积分</span>;
-        }
+    
         
         // 只显示子章节积分
         return `积分: ${record.points}`;

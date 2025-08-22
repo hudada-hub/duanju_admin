@@ -10,11 +10,8 @@ export interface Short {
   instructor: string;
   categoryId: number;
   directionId: number;
-  targetAudience: string;
-  shortsGoals: string;
-  oneTimePayment: boolean;
-  oneTimePoint: number;
-  shortsware: any[];
+ 
+
   createdAt: string;
   updatedAt: string;
   category?: {
