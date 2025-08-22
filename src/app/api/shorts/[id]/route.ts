@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const data = await request.json();
 
     // 必填字段验证
-    const requiredFields = ['title', 'coverUrl', 'description', 'instructor', 'directionId', 'categoryId'];
+    const requiredFields = ['title', 'coverUrl', 'description', 'instructor', 'directionId', 'categoryId','status'];
     for (const field of requiredFields) {
       if (!data[field]) {
         return ResponseUtil.error(`${field}不能为空`);
@@ -46,9 +46,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const short = await prisma.short.update({
       where: { id: parseInt(id) },
       data: {
-        ...data,
+        title: data.title,
+        coverUrl: data.coverUrl,
+        description: data.description,
+        instructor: data.instructor,
+        status: data.status,
         tags: data.tags || [], // 确保tags是数组
-        shortsware: data.shortsware || {}, // 确保shortsware是对象
+        // 使用关系连接而不是直接的外键ID
+        direction: {
+          connect: { id: data.directionId }
+        },
+        category: {
+          connect: { id: data.categoryId }
+        },
       },
       include: {
         category: true,
@@ -58,6 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return ResponseUtil.success(short);
   } catch (error) {
+    console.log(error,'error')
     return ResponseUtil.error('更新短剧失败');
   } 
 }

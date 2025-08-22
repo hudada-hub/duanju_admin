@@ -67,8 +67,7 @@ export async function PUT(
         points: points || 0,
         sort: sort || 0, // 如果没有提供排序，默认为0
         duration,
-        selectTotalPoints: selectTotalPoints || false, // 新增
-        totalPoints: totalPoints || null, // 新增
+        
       },
       include: {
         uploader: {

@@ -67,10 +67,7 @@ export async function GET(
     // 先检查短剧是否支持一次性支付
     const short = await prisma.short.findUnique({
       where: { id: Number(id) },
-      select: {
-        oneTimePayment: true,
-        oneTimePoint: true,
-      },
+      
     });
 
     // 先检查是否是一次性购买整个短剧
@@ -78,7 +75,6 @@ export async function GET(
       where: {
         userId: userData.user.id,
         shortsId: Number(id),
-        oneTimePayment: true, // 一次性支付订单
       },
     });
 
@@ -132,15 +128,6 @@ export async function GET(
       }
     }
 
-    // 如果短剧支持一次性支付，返回相关信息
-    if (short?.oneTimePayment && short.oneTimePoint && short.oneTimePoint > 0) {
-      return ResponseUtil.success({
-        hasPurchased: false,
-        isOneTimePayment: true,
-        oneTimePoint: short.oneTimePoint,
-        message: `该短剧支持一次性支付，需要 ${short.oneTimePoint} 积分购买整个短剧`
-      });
-    }
 
     // 返回需要购买的信息
     return ResponseUtil.success({
@@ -173,8 +160,7 @@ export async function POST(
     const short = await prisma.short.findUnique({
       where: { id: shortsId },
       select: {
-        oneTimePayment: true,
-        oneTimePoint: true,
+    
         uploaderId: true,
       },
     });
@@ -213,39 +199,7 @@ export async function POST(
     let pointsToDeduct = 0;
     let targetChapterId: number | null = parseInt(chapterId);
 
-    // 检查是否是一次性支付短剧
-    if (short?.oneTimePayment && short.oneTimePoint && short.oneTimePoint > 0) {
-      // 一次性支付短剧，检查是否已购买整个短剧
-      const existingShortOrder = await prisma.shortsOrder.findFirst({
-        where: {
-          userId: user.id,
-          shortsId,
-          oneTimePayment: true,
-          chapterId: null,
-        },
-      });
-
-      if (existingShortOrder) {
-        return ResponseUtil.error('您已经购买过此短剧');
-      }
-
-      // 如果是上传者，不需要检查积分和扣除积分
-      if (!isUploader && currentUser.points < short.oneTimePoint) {
-        throw new Error(`积分不足，需要 ${short.oneTimePoint} 积分购买整个短剧`);
-      }
-
-      // 创建整个短剧的订单
-      orderToCreate = {
-        userId: user.id,
-        shortsId,
-        chapterId: null, // 整个短剧的订单
-        points: isUploader ? 0 : short.oneTimePoint, // 上传者积分为0
-        oneTimePayment: true,
-        oneTimePoint: short.oneTimePoint,
-      };
-      pointsToDeduct = isUploader ? 0 : short.oneTimePoint; // 上传者不扣除积分
-      targetChapterId = null;
-    } else {
+ 
       // 检查是否已经购买过该章节
       const existingOrder = await prisma.shortsOrder.findFirst({
         where: {
@@ -272,7 +226,7 @@ export async function POST(
         points: isUploader ? 0 : chapter.points, // 上传者积分为0
       };
       pointsToDeduct = isUploader ? 0 : chapter.points; // 上传者不扣除积分
-    }
+
 
     // 使用事务确保数据一致性
     const result = await prisma.$transaction(async (tx) => {

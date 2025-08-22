@@ -51,11 +51,11 @@ b.统计需求（人数、日活、充值金额）
 
 10. 每个页面使用AdminLayout组件包裹起来，AdminLayout组件在src/app/components/layout/AdminLayout.tsx
 11. 接口请求使用/src/utils/request.ts，demo:
-  await request('/course-categories', {
+  await request('/shorts-categories', {
             method: 'POST',
             body: JSON.stringify(values)
         });
- 注意接口路径不要写错，比如/course-categories，不要写成/api/course-categories ，没有api前缀 
+ 注意接口路径不要写错，比如/shorts-categories，不要写成/api/shorts-categories ，没有api前缀 
 
 12. 上传文件接口使用/src/app/api/common/upload/route.ts
 

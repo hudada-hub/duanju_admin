@@ -59,7 +59,7 @@ export default function CourseCommentsPage() {
   const fetchComments = async (params = {}) => {
     setLoading(true);
     try {
-      const response = await request('/course-comments', {
+      const response = await request('/shorts-comments', {
         method: 'POST',
         body: JSON.stringify({
           page: currentPage,
@@ -113,7 +113,7 @@ export default function CourseCommentsPage() {
       });
 
       if (result.isConfirmed) {
-        const response = await request(`/course-comments?id=${id}`, {
+        const response = await request(`/shorts-comments?id=${id}`, {
           method: 'DELETE'
         });
 
@@ -149,7 +149,7 @@ export default function CourseCommentsPage() {
       });
 
       if (result.isConfirmed) {
-        const response = await request(`/course-comments?ids=${JSON.stringify(selectedRowKeys)}`, {
+        const response = await request(`/shorts-comments?ids=${JSON.stringify(selectedRowKeys)}`, {
           method: 'DELETE'
         });
 

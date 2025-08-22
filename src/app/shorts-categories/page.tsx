@@ -24,7 +24,7 @@ export default function CourseCategoriesPage() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await request('/course-categories', {
+      const res = await request('/shorts-categories', {
         method: 'GET'
       });
       setCategories(res.data);
@@ -66,7 +66,7 @@ export default function CourseCategoriesPage() {
 
     if (result.isConfirmed) {
       try {
-        await request(`/course-categories/${id}`, {
+        await request(`/shorts-categories/${id}`, {
             method: 'DELETE'
         });
         await fetchCategories();
@@ -83,13 +83,13 @@ export default function CourseCategoriesPage() {
       const values = await form.validateFields();
       if (editingCategory) {
         // 编辑
-        await request(`/course-categories/${editingCategory.id}`, {
+        await request(`/shorts-categories/${editingCategory.id}`, {
             method: 'PUT',
             body: JSON.stringify(values)
         });
       } else {
         // 新增
-        await request('/course-categories', {
+        await request('/shorts-categories', {
             method: 'POST',
             body: JSON.stringify(values)
         });

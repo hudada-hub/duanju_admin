@@ -70,7 +70,7 @@ export default function CourseOrdersPage() {
   const fetchOrders = async (params = {}) => {
     setLoading(true);
     try {
-      const response = await request('/course-orders', {
+      const response = await request('/shorts-orders', {
         method: 'POST',
         body: JSON.stringify({
           page: currentPage,
@@ -96,7 +96,7 @@ export default function CourseOrdersPage() {
   // 获取统计信息
   const fetchStats = async () => {
     try {
-      const response = await request('/course-orders?type=stats', {
+      const response = await request('/shorts-orders?type=stats', {
         method: 'GET'
       });
 

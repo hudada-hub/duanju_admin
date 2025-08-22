@@ -91,19 +91,19 @@ model User {
   orders         Order[]
   
   // 短剧相关关联
-  shortsOrders        shortsOrder[]
-  shortsComments      shortsComment[]
-  shortsCommentLikes  shortsCommentLike[]
-  shortsFavorites    shortsFavorite[]
+  shortsOrders        ShortsOrder[]
+  shortsComments      ShortsComment[]
+  shortsCommentLikes  ShortsCommentLike[]
+  shortsFavorites    ShortsFavorite[]
 
   withdrawRecords   WithdrawRecord[]  // 提现记录
   userWithdrawRecords UserWithdrawRecord[] // 用户提现记录
 
   messages         UserMessage[]      // 用户留言
-  shortsChapterLogs   shortsChapterLog[] // 学习行为记录
+  shortsChapterLogs   ShortsChapterLog[] // 学习行为记录
 
   // 短剧章节上传
-  uploadedChapters shortsChapter[]
+  uploadedChapters ShortsChapter[]
 
   // 签到相关关联
   signIns              UserSignIn[]
@@ -112,7 +112,7 @@ model User {
   @@index([phone])
   @@index([points])  // 添加积分索引
   Short Short[]
-  shortsLike shortsLike[]
+  shortsLike ShortsLike[]
 }
 
 // 配置项类型枚举
@@ -293,7 +293,7 @@ enum ShortStatus {
 }
 
 // 短剧分类表
-model shortsCategory {
+model ShortsCategory {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(100)
   createdAt   DateTime @default(now())
@@ -302,7 +302,7 @@ model shortsCategory {
 }
 
 // 短剧方向表
-model shortsDirection {
+model ShortsDirection {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(100)
   createdAt   DateTime @default(now())
@@ -312,40 +312,39 @@ model shortsDirection {
 
 // 视频短剧表
 model Short {
-  id              Int              @id @default(autoincrement())
-  title           String           @db.VarChar(200)
-  coverUrl        String           @db.VarChar(500)
-  summary         String?          @db.Text
-  description     String           @db.Text
-  instructor      String           @db.VarChar(100)
-  viewCount       Int              @default(0)
+  id              Int              @id @default(autoincrement()) // 短剧ID
+  title           String           @db.VarChar(200)              // 短剧标题
+  coverUrl        String           @db.VarChar(500)              // 封面图片URL
+  summary         String?          @db.Text                      // 短剧简介
+  description     String           @db.Text                      // 短剧详细描述
+  instructor      String           @db.VarChar(100)              // 导演姓名
+  viewCount       Int              @default(0)                   // 观看次数
   
-  direction       shortsDirection  @relation(fields: [directionId], references: [id])
-  directionId     Int
-  status         ShortStatus     @default(ONGOING)
-  episodeCount   Int              @default(0)
-  totalDuration  Int              @default(0)    // 总时长（分钟）
-  tags           String[]         // 短剧标签
-  likeCount      Int             @default(0)
-  favoriteCount  Int             @default(0)
-  isTop          Boolean         @default(false) // 是否置顶
-  isDeleted      Boolean         @default(false) // 是否删除
-  isHidden       Boolean         @default(false) // 是否隐藏
-  oneTimePayment Boolean         @default(false) // 是否支持一次性支付
-  oneTimePoint   Int             @default(0) // 一次性支付积分
-  shortsware     Json?           // 课件信息（JSON数组格式）
-  category       shortsCategory  @relation(fields: [categoryId], references: [id])
-  categoryId     Int
-  createdAt      DateTime        @default(now())
+  direction       ShortsDirection  @relation(fields: [directionId], references: [id]) // 短剧方向关联
+  directionId     Int                                                                  // 方向ID
+  status         ShortStatus     @default(ONGOING)                                     // 短剧状态（连载中/已完结）
+  episodeCount   Int              @default(0)                                          // 章节总数
+  totalDuration  Int              @default(0)                                          // 总时长（分钟）
+  tags           String[]                                                               // 短剧标签数组
+  likeCount      Int             @default(0)                                           // 点赞数量
+  favoriteCount  Int             @default(0)                                           // 收藏数量
+  isTop          Boolean         @default(false)                                       // 是否置顶
+  isDeleted      Boolean         @default(false)                                       // 是否删除（软删除）
+  isHidden       Boolean         @default(false)                                       // 是否隐藏
+  isFree         Boolean         @default(false)                                       // 是否免费
+  
+  category       ShortsCategory  @relation(fields: [categoryId], references: [id])      // 短剧分类关联
+  categoryId     Int                                                                   // 分类ID
+  createdAt      DateTime        @default(now())                                       // 创建时间
   updatedAt      DateTime        @updatedAt
 
   // 关联
-  chapters       shortsChapter[]
-  orders         shortsOrder[]
-  comments       shortsComment[]
-  favorites      shortsFavorite[]
-  shortsChapterLogs shortsChapterLog[]
-  shortsLikes      shortsLike[]
+  chapters       ShortsChapter[]
+  orders         ShortsOrder[]
+  comments       ShortsComment[]
+  favorites      ShortsFavorite[]
+  shortsChapterLogs ShortsChapterLog[]
+  shortsLikes      ShortsLike[]
 
   uploader       User           @relation(fields: [uploaderId], references: [id])
   uploaderId     Int
@@ -359,14 +358,13 @@ model Short {
 }
 
 // 视频章节表
-model shortsChapter {
+model ShortsChapter {
   id          Int      @id @default(autoincrement())
   title       String   @db.VarChar(200)
-  selectTotalPoints Boolean @default(false) // 是否选择总积分
-  totalPoints Int?     @default(0) // 总积分
+
   description String?  @db.Text
   videoUrl    String?   @db.VarChar(500)
-  short      Short   @relation(fields: [shortsId], references: [id])
+  shorts      Short   @relation(fields: [shortsId], references: [id])
   shortsId    Int
   duration    Int?      // 时长（分钟）
   points      Int      @default(0) // 所需积分
@@ -376,8 +374,8 @@ model shortsChapter {
   uploaderId  Int      // 上传人ID
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  orders      shortsOrder[] // 添加反向关系
-  shortsChapterLogs shortsChapterLog[] // 学习行为记录
+  orders      ShortsOrder[] // 添加反向关系
+  shortsChapterLogs ShortsChapterLog[] // 观看短剧记录
   coverUrl    String? @db.VarChar(500)
 
   @@index([shortsId])
@@ -386,20 +384,19 @@ model shortsChapter {
 }
 
 // 用户购买短剧订单表
-model shortsOrder {
+model ShortsOrder {
   id          String    @id @default(cuid())
   user        User     @relation(fields: [userId], references: [id])
   userId      Int
-  short      Short   @relation(fields: [shortsId], references: [id])
+  shorts      Short   @relation(fields: [shortsId], references: [id])
   shortsId    Int
-  chapter     shortsChapter? @relation(fields: [chapterId], references: [id])
+  chapter     ShortsChapter? @relation(fields: [chapterId], references: [id])
   chapterId   Int?
   points      Int      // 购买使用的积分
   progress    Float    @default(0) // 学习进度（百分比）
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  oneTimePoint Int?     // 一次性支付积分
-  oneTimePayment Boolean @default(false) // 是否支持一次性支付
+
 
   @@index([userId])
   @@index([shortsId])
@@ -407,19 +404,19 @@ model shortsOrder {
 }
 
 // 短剧评论表
-model shortsComment {
+model ShortsComment {
   id          Int      @id @default(autoincrement())
   content     String   @db.Text
   user        User     @relation(fields: [userId], references: [id])
   userId      Int
-  short      Short   @relation(fields: [shortsId], references: [id])
+  shorts      Short   @relation(fields: [shortsId], references: [id])
   shortsId    Int
   chapterId   Int?     // 可选，指定是哪个视频章节的评论
   createdAt   DateTime @default(now())
   parentId    Int?     // 父评论ID
-  parent      shortsComment? @relation("CommentReplies", fields: [parentId], references: [id])
-  replies     shortsComment[] @relation("CommentReplies")
-  likes       shortsCommentLike[]
+  parent      ShortsComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     ShortsComment[] @relation("CommentReplies")
+  likes       ShortsCommentLike[]
 
   pics        String[] @default([]) // 图片
 
@@ -430,9 +427,9 @@ model shortsComment {
 }
 
 // 短剧评论点赞表
-model shortsCommentLike {
+model ShortsCommentLike {
   id          Int           @id @default(autoincrement())
-  comment     shortsComment @relation(fields: [commentId], references: [id])
+  comment     ShortsComment @relation(fields: [commentId], references: [id])
   commentId   Int
   user        User          @relation(fields: [userId], references: [id])
   userId      Int
@@ -442,11 +439,11 @@ model shortsCommentLike {
 }
 
 // 短剧点赞表
-model shortsLike {
+model ShortsLike {
   id          Int      @id @default(autoincrement())
   user        User     @relation(fields: [userId], references: [id])
   userId      Int
-  short      Short   @relation(fields: [shortsId], references: [id])
+  shorts      Short   @relation(fields: [shortsId], references: [id])
   shortsId    Int
   createdAt   DateTime @default(now())
 
@@ -455,11 +452,11 @@ model shortsLike {
 }
 
 // 短剧收藏表
-model shortsFavorite {
+model ShortsFavorite {
   id          Int      @id @default(autoincrement())
   user        User     @relation(fields: [userId], references: [id])
   userId      Int
-  short      Short   @relation(fields: [shortsId], references: [id])
+  shorts      Short   @relation(fields: [shortsId], references: [id])
   shortsId    Int
   createdAt   DateTime @default(now())
 
@@ -529,7 +526,7 @@ model UserMessage {
 }
 
 // 学习行为记录表
-model shortsChapterLog {
+model ShortsChapterLog {
   id        Int      @id @default(autoincrement())
   userId    Int
   shortsId  Int
@@ -537,8 +534,8 @@ model shortsChapterLog {
   progress  Int      @default(0)  
   timestamp DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
-  short    Short   @relation(fields: [shortsId], references: [id])
-  chapter   shortsChapter @relation(fields: [chapterId], references: [id])
+  shorts    Short   @relation(fields: [shortsId], references: [id])
+  chapter   ShortsChapter @relation(fields: [chapterId], references: [id])
 
   @@index([userId])
   @@index([shortsId])

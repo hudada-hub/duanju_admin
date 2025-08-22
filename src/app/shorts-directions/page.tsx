@@ -24,7 +24,7 @@ export default function CourseDirectionsPage() {
   const fetchDirections = async () => {
     setLoading(true);
     try {
-      const res = await request('/course-directions');
+      const res = await request('/shorts-directions');
       setDirections(res.data);
     } catch (error) {
       console.error('获取短剧方向失败:', error);
@@ -64,7 +64,7 @@ export default function CourseDirectionsPage() {
 
     if (result.isConfirmed) {
       try {
-        await request(`/course-directions/${id}`, {
+        await request(`/shorts-directions/${id}`, {
           method: 'DELETE'
         });
         await fetchDirections();
@@ -81,13 +81,13 @@ export default function CourseDirectionsPage() {
       const values = await form.validateFields();
       if (editingDirection) {
         // 编辑
-        await request(`/course-directions/${editingDirection.id}`, {
+        await request(`/shorts-directions/${editingDirection.id}`, {
           method: 'PUT',
           body: JSON.stringify(values)
         });
       } else {
         // 新增
-        await request('/course-directions', {
+        await request('/shorts-directions', {
           method: 'POST',
           body: JSON.stringify(values)
         });

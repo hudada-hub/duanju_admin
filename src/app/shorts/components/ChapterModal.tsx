@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Form, Input, Button, Table, Space, Upload, InputNumber, Progress, Checkbox } from 'antd';
+import { Modal, Form, Input, Button, Table, Space, Upload, InputNumber, Progress, Checkbox, Select } from 'antd';
 import { PlusOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { request } from '@/utils/request';
 import Swal from 'sweetalert2';
@@ -173,9 +173,7 @@ interface ChapterData {
   points: number;
   sort: number;
   children?: ChapterData[];
-  parentId?: number;
-  selectTotalPoints?: boolean; // 是否选择总积分
-  totalPoints?: number; // 总积分
+
   uploader?: {
     id: number;
     name: string;
@@ -190,7 +188,6 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   const [expandedKeys, setExpandedKeys] = useState<number[]>([]);
   const [editingChapter, setEditingChapter] = useState<ChapterData | null>(null);
   const [isSubChapterModalOpen, setIsSubChapterModalOpen] = useState(false);
-  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [parentChapterInfo, setParentChapterInfo] = useState<ChapterData | null>(null); // 添加父章节信息状态
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [duration, setDuration] = useState<number | undefined>(undefined); // 新增
@@ -296,6 +293,27 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   // 表格列定义
   const columns = [
     {
+      title: '封面',
+      key: 'cover',
+      width: 80,
+      render: (_: any, record: ChapterData) => (
+        <div className="w-16 h-12 rounded overflow-hidden">
+          {(record as any).coverUrl ? (
+            <CosImage
+              path={(record as any).coverUrl}
+              width={64}
+              height={48}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span className="text-xs text-gray-400">无封面</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
@@ -314,15 +332,8 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
           return <span className="text-gray-500">无需设置积分</span>;
         }
         
-        if (!record.parentId) {
-          // 父章节显示总积分设置
-          return record.selectTotalPoints 
-            ? `总积分: ${record.totalPoints || 0}` 
-            : '按子章节积分';
-        } else {
-          // 子章节显示单个积分
-          return `积分: ${record.points}`;
-        }
+        // 只显示子章节积分
+        return `积分: ${record.points}`;
       },
     },
     {
@@ -341,11 +352,6 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       key: 'action',
       render: (_: any, record: ChapterData) => (
         <Space size="middle">
-          {!record.parentId && (
-            <Button type="link" onClick={() => handleAddSubChapter(record.id)}>
-              添加子章节
-            </Button>
-          )}
           <Button type="link" onClick={() => handleEdit(record)}>
             编辑
           </Button>
@@ -357,23 +363,11 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
     },
   ];
 
-  // 处理添加主章节
-  const handleAddMainChapter = () => {
-    setEditingChapter(null);
-    setSelectedParentId(null);
-    setParentChapterInfo(null); // 重置父章节信息
-    setVideoUrl(''); // 重置视频URL
-    setCoverUrl(''); // 重置封面URL
-    setCoverCandidates([]); // 重置封面候选列表
-    setDuration(undefined); // 重置视频时长
-    form.resetFields();
-    setIsSubChapterModalOpen(true);
-  };
+
 
   // 处理添加子章节
   const handleAddSubChapter = (parentId: number) => {
     setEditingChapter(null);
-    setSelectedParentId(parentId);
     // 查找父章节信息
     const parentChapter = chapters.find(ch => ch.id === parentId);
     setParentChapterInfo(parentChapter || null);
@@ -388,15 +382,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   // 处理编辑章节
   const handleEdit = (chapter: ChapterData) => {
     setEditingChapter(chapter);
-    setSelectedParentId(chapter.parentId || null);
-    
-    // 如果是子章节，查找父章节信息
-    if (chapter.parentId) {
-      const parentChapter = chapters.find(ch => ch.id === chapter.parentId);
-      setParentChapterInfo(parentChapter || null);
-    } else {
-      setParentChapterInfo(null);
-    }
+  
     
     setVideoUrl(chapter.videoUrl || '');
     setCoverUrl((chapter as any).coverUrl || ''); // 编辑时回显封面
@@ -405,8 +391,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       description: chapter.description,
       points: chapter.points,
       sort: chapter.sort,
-      selectTotalPoints: chapter.selectTotalPoints || false,
-      totalPoints: chapter.totalPoints,
+    
       videoUrl: chapter.videoUrl,
     });
     setIsSubChapterModalOpen(true);
@@ -415,21 +400,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   // 处理删除章节
   const handleDelete = async (id: number) => {
     try {
-      // 检查是否有子章节
-      const hasChildren = chapters.some(chapter => chapter.parentId === id);
-      if (hasChildren) {
-        Swal.fire({
-          title: '无法删除',
-          text: '请先删除所有子章节',
-          icon: 'error',
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
-          position: 'top-end',
-          toast: true
-        });
-        return;
-      }
+  
 
       // 显示确认弹窗
       const result = await Swal.fire({
@@ -509,12 +480,10 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       const data = {
         ...values,
         courseId,
-        parentId: selectedParentId,
         duration: duration,
         // 处理积分相关字段
-        selectTotalPoints: !selectedParentId ? (values.selectTotalPoints || false) : undefined,
-        totalPoints: !selectedParentId && values.selectTotalPoints ? values.totalPoints : undefined,
-        points: selectedParentId && !parentChapterInfo?.selectTotalPoints ? values.points : 0,
+   
+        points:  values.points ?? 0,
       };
       
       console.log(coverUrl,'coverUrl')
@@ -599,14 +568,19 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
         onCancel={onCancel}
         width={1200}
         footer={[
-          <Button key="add" type="primary" onClick={handleAddMainChapter}>
-            新建主章节
-          </Button>,
           <Button key="close" onClick={onCancel}>
             关闭
           </Button>,
         ]}
       >
+          {/* 新增短剧章节按钮 */}
+          <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={() => handleAddSubChapter(0)}
+              >
+                新建短剧章节
+              </Button>
         <Table
           loading={loading}
           columns={columns}
@@ -625,7 +599,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       </Modal>
 
       <Modal
-        title={`${editingChapter ? '编辑' : '新建'}${selectedParentId ? '子' : '主'}章节`}
+        title={`${editingChapter ? '编辑' : '新建'} 子章节`}
         open={isSubChapterModalOpen}
         onOk={handleSubmit}
         onCancel={handleModalClose}
@@ -644,72 +618,34 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
             <Input.TextArea />
           </Form.Item> */}
 
-          {/* 父章节的积分设置 - 仅当短剧不是一次性支付时显示 */}
-          {!selectedParentId && !courseInfo?.oneTimePayment && (
-            <>
-              <Form.Item
-                name="selectTotalPoints"
-                valuePropName="checked"
-                initialValue={false}
-              >
-                <Checkbox>
-                  选择总积分
-                  <div className="text-sm text-gray-500 mt-1">
-                    勾选后，整个章节使用总积分，否则按子章节分别计费
-                  </div>
-                </Checkbox>
-              </Form.Item>
 
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) => 
-                  prevValues.selectTotalPoints !== currentValues.selectTotalPoints
-                }
-              >
-                {({ getFieldValue }) => {
-                  const selectTotalPoints = getFieldValue('selectTotalPoints');
-                  return selectTotalPoints ? (
-                    <Form.Item
-                      name="totalPoints"
-                      label="总积分"
-                      rules={[{ required: true, message: '请输入总积分' }]}
-                    >
-                      <InputNumber min={0} precision={0} placeholder="请输入总积分" />
-                    </Form.Item>
-                  ) : null;
-                }}
-              </Form.Item>
-            </>
-          )}
 
-          {/* 子章节的积分设置 - 仅当短剧不是一次性支付且父章节未选择总积分时显示 */}
-          {selectedParentId && !courseInfo?.oneTimePayment && !parentChapterInfo?.selectTotalPoints && (
-          <Form.Item
-            name="points"
-            label="积分"
-            rules={[{ required: true, message: '请输入积分' }]}
-          >
-              <InputNumber min={0} precision={0} placeholder="请输入积分" />
-          </Form.Item>
-          )}
+          {/* 积分设置 */}
+          <div className="flex items-center gap-2">
+            <Form.Item
+              name="points"
+              label="积分"
+              rules={[{ required: true, message: '请填写积分' }]}
+            >
+              <InputNumber 
+                  min={0} 
+                  precision={0} 
+                  placeholder="请输入积分" 
+                  className="flex-1"
+                />
+            </Form.Item>
+            <Button 
+                  type="default" 
+                  size="middle"
+                  onClick={() => {
+                    form.setFieldValue('points', 0);
+                  }}
+                >
+                  免费
+                </Button>
+          </div>
 
-          {/* 如果父章节选择了总积分，显示提示信息 */}
-          {selectedParentId && !courseInfo?.oneTimePayment && parentChapterInfo?.selectTotalPoints && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-blue-700 text-sm">
-                父章节已设置总积分为 {parentChapterInfo.totalPoints} 分，子章节无需单独设置积分
-              </p>
-            </div>
-          )}
-
-          {/* 当短剧是一次性支付时，显示提示信息 */}
-          {courseInfo?.oneTimePayment && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
-              <p className="text-green-700 text-sm">
-                该短剧已设置为一次性支付，无需设置章节积分
-              </p>
-            </div>
-          )}
+         
 
           <Form.Item
             name="sort"
@@ -718,14 +654,13 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
             <InputNumber min={0} precision={0} placeholder="请输入排序（可选）" />
           </Form.Item>
 
-          {/* 只有子章节才显示视频上传 */}
-          {selectedParentId && (
-            <Form.Item 
-              name="videoUrl" 
-              label="视频"
-              rules={[{ required: true, message: '请上传视频' }]}
-              extra="支持 mp4, mov, avi, wmv 格式，大小不超过500MB"
-            >
+          {/* 视频上传 */}
+          <Form.Item 
+            name="videoUrl" 
+            label="视频"
+            rules={[{ required: true, message: '请上传视频' }]}
+            extra="支持 mp4, mov, avi, wmv 格式，大小不超过500MB"
+          >
               <div className="space-y-4">
                 {!videoUrl ? (
                   <Upload
@@ -943,7 +878,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
                   </div>
                 )}
                 {duration !== undefined && (
-                  <div className="text-xs text-gray-500 mt-2">视频时长：{duration} 秒</div>
+                  <div className="text-xs text-gray-500 mt-2">视频时长：{duration.toFixed(2)} 秒</div>
                 )}
                 {uploading && (
                   <div className="mt-4">
@@ -1034,7 +969,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
               />
               </div>
             </Form.Item>
-          )}
+      
         </Form>
       </Modal>
     </>

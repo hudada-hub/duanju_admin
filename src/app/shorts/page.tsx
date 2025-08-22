@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Table, Drawer, Form, Input, Space, Card, Select, Tag, InputNumber } from 'antd';
+import { Button, Table, Drawer, Form, Input, Space, Card, Select, Tag, InputNumber, Switch } from 'antd';
 import { request } from '@/utils/request';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import Swal from 'sweetalert2';
@@ -101,8 +101,9 @@ export default function ShortsPage() {
     setLoading(true);
     try {
       const res = await request(`/shorts?page=${page}&pageSize=${size}&keyword=${keyword}`);
-      setShorts(res.data.items);
-      setTotal(res.data.total);
+      // 修复数据结构解析
+      setShorts(res.data.data || []);
+      setTotal(res.data.pagination?.total || 0);
     } catch (error) {
       console.error('获取短剧列表失败:', error);
     } finally {
@@ -303,7 +304,7 @@ export default function ShortsPage() {
       ),
     },
     {
-      title: '讲师',
+      title: '导演',
       dataIndex: 'instructor',
       width: 100,
     },
@@ -317,19 +318,7 @@ export default function ShortsPage() {
       dataIndex: ['direction', 'name'],
       width: 100,
     },
-    {
-      title: '难度',
-      dataIndex: 'level',
-      width: 100,
-      render: (level: string) => {
-        const levelMap = {
-          BEGINNER: '初级',
-          INTERMEDIATE: '中级',
-          ADVANCED: '高级'
-        };
-        return levelMap[level as keyof typeof levelMap];
-      },
-    },
+ 
     {
       title: '状态',
       dataIndex: 'status',
@@ -348,9 +337,18 @@ export default function ShortsPage() {
       width: 80,
     },
     {
-      title: '时长(分钟)',
+      title: '时长',
       dataIndex: 'totalDuration',
       width: 100,
+      render: (duration: number) => {
+        if (!duration || duration === 0) return '0小时';
+        const hours = Math.floor(duration / 3600);
+        const minutes = Math.floor((duration % 3600) / 60);
+        if (hours > 0) {
+          return minutes > 0 ? `${hours}小时${minutes}分钟` : `${hours}小时`;
+        }
+        return `${minutes}分钟`;
+      },
     },
    
     {
@@ -358,6 +356,43 @@ export default function ShortsPage() {
       dataIndex: 'createdAt',
       width: 180,
       render: (text: string) => new Date(text).toLocaleString(),
+    },
+    {
+      title: '是否免费',
+      dataIndex: 'isFree',
+      width: 100,
+      render: (isFree: boolean, record: Short) => (
+        <Switch
+          checked={isFree}
+          onChange={async (checked: boolean) => {
+            try {
+              await request(`/shorts/${record.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ isFree: checked })
+              });
+              // 刷新列表
+              fetchShorts();
+              Swal.fire({
+                icon: 'success',
+                title: '更新成功',
+                showConfirmButton: false,
+                timer: 1500,
+                position: 'top-end',
+                toast: true
+              });
+            } catch (error) {
+              Swal.fire({
+                icon: 'error',
+                title: '更新失败',
+                showConfirmButton: false,
+                timer: 1500,
+                position: 'top-end',
+                toast: true
+              });
+            }
+          }}
+        />
+      ),
     },
     {
       title: '操作',
@@ -421,14 +456,18 @@ export default function ShortsPage() {
               />
             </Space>
             
-            {/* 新增短剧按钮 */}
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={handleAddShort}
-            >
-              新增短剧
-            </Button>
+            <Space>
+            
+              
+              {/* 新增短剧按钮 */}
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={handleAddShort}
+              >
+                新增短剧
+              </Button>
+            </Space>
           </div>
 
           <Table
@@ -495,10 +534,10 @@ export default function ShortsPage() {
 
               <Form.Item
                 name="instructor"
-                label="讲师"
-                rules={[{ required: true, message: '请输入讲师名称' }]}
+                label="导演"
+                rules={[{ required: true, message: '请输入导演名称' }]}
               >
-                <Input placeholder="请输入讲师名称" />
+                <Input placeholder="请输入导演名称" />
               </Form.Item>
 
               <Form.Item

@@ -56,18 +56,17 @@ export async function POST(
     }
 
     const { id } = await params;
+    const shortsId = parseInt(id);
     const data = await request.json();
     const {
       title,
       description,
       videoUrl,
       coverUrl,
-      shortsId,
       points,
       sort,
       duration,
-      selectTotalPoints, // 新增
-      totalPoints, // 新增
+      courseId, // 前端可能还在使用courseId
     } = data;
 
     // 验证短剧所有权
@@ -79,7 +78,7 @@ export async function POST(
     });
 
     if (!short) {
-      return ResponseUtil.notFound('短剧不存在或无权限操作'+ user.id);
+      return ResponseUtil.notFound('短剧不存在或无权限操作');
     }
 
     // 创建章节
@@ -91,11 +90,13 @@ export async function POST(
         coverUrl,
         points: points || 0,
         sort: sort || 0, // 如果没有提供排序，默认为0
-        shortsId,
-        uploaderId: user.id,
+        shorts: {
+          connect: { id: shortsId }
+        },
+        uploader: {
+          connect: { id: user.id }
+        },
         duration,
-        selectTotalPoints: selectTotalPoints || false, // 新增
-        totalPoints: totalPoints || null, // 新增
       },
       include: {
         uploader: {

@@ -153,7 +153,7 @@ export default function DashboardPage() {
       '文章总数': '/articles',
       '文章评论': '/article-comments',
       '短剧总数': '/shorts',
-      '短剧订单': '/course-orders',
+      '短剧订单': '/shorts-orders',
       '帖子总数': '/forum-posts',
       '任务总数': '/tasks',
       '今日可结算任务': '/task-settlement',
