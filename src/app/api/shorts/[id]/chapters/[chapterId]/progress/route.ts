@@ -26,43 +26,67 @@ export async function POST(
     }
 
     // 查找用户的短剧订单记录
-    const courseOrder = await prisma.courseOrder.findFirst({
+    const shortsOrder = await prisma.shortsOrder.findFirst({
       where: {
         userId: user.id,
-        courseId: courseId,
+        shortsId: courseId,
         OR: [
           // 检查是否有该章节的单独订单
           { chapterId: chapterIdNum },
-          // 检查是否有一次性购买整个短剧的订单
-          { oneTimePayment: true, chapterId: null }
+          // 检查是否有免费短剧（无需购买）
+          { shorts: { isFree: true } }
         ],
       },
     });
 
-    if (!courseOrder) {
-      return ResponseUtil.error('您尚未购买该章节或短剧');
+    // 如果短剧是免费的，直接允许学习
+    if (!shortsOrder) {
+      // 检查短剧是否免费
+      const short = await prisma.short.findUnique({
+        where: { id: courseId },
+        select: { isFree: true }
+      });
+      
+      if (!short?.isFree) {
+        return ResponseUtil.error('您尚未购买该章节或短剧');
+      }
     }
 
     // 使用事务同时更新学习进度和用户学习时长
-    const [updatedOrder] = await prisma.$transaction([
-      // 更新学习进度
-      prisma.courseOrder.update({
-        where: { id: courseOrder.id },
-        data: {
-          progress: progress,
-          updatedAt: new Date(),
-        },
-      }),
-      // 更新用户学习时长，每次加5分钟
-      prisma.user.update({
+    let updatedOrder;
+    if (shortsOrder) {
+      [updatedOrder] = await prisma.$transaction([
+        // 更新学习进度
+        prisma.shortsOrder.update({
+          where: { id: shortsOrder.id },
+          data: {
+            progress: progress,
+            updatedAt: new Date(),
+          },
+        }),
+        // 更新用户学习时长，每次加5分钟
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            studyTime: {
+              increment: 5, // 每次学习增加5分钟
+            },
+          },
+        }),
+      ]);
+    } else {
+      // 免费短剧，只更新用户学习时长
+      await prisma.user.update({
         where: { id: user.id },
         data: {
           studyTime: {
             increment: 5, // 每次学习增加5分钟
           },
         },
-      }),
-    ]);
+      });
+      
+      updatedOrder = { progress: progress };
+    }
 
     return ResponseUtil.success({
       success: true,
@@ -90,21 +114,36 @@ export async function GET(
     const chapterIdNum = parseInt(chapterId);
 
     // 查找学习进度记录
-    const courseOrder = await prisma.courseOrder.findFirst({
+    const shortsOrder = await prisma.shortsOrder.findFirst({
       where: {
         userId: user.id,
-        courseId: courseId,
+        shortsId: courseId,
         OR: [
           // 检查是否有该章节的单独订单
           { chapterId: chapterIdNum },
-          // 检查是否有一次性购买整个短剧的订单
-          { oneTimePayment: true, chapterId: null }
+          // 检查是否有免费短剧（无需购买）
+          { shorts: { isFree: true } }
         ],
       },
     });
 
+    // 如果短剧是免费的，直接返回进度0
+    if (!shortsOrder) {
+      // 检查短剧是否免费
+      const short = await prisma.short.findUnique({
+        where: { id: courseId },
+        select: { isFree: true }
+      });
+      
+      if (short?.isFree) {
+        return ResponseUtil.success({
+          progress: 0,
+        });
+      }
+    }
+
     return ResponseUtil.success({
-      progress: courseOrder?.progress || 0,
+      progress: shortsOrder?.progress || 0,
     });
   } catch (error) {
     console.error('获取学习进度失败:', error);

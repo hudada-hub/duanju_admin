@@ -47,7 +47,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
         categoryId: editingCourse.categoryId,
         directionId: editingCourse.directionId,
         coverUrl: editingCourse.coverUrl,
-        status: editingCourse.status || 'ONGOING', // 设置状态字段
+        status: editingCourse.status ,
       });
       setCoverUrl(editingCourse.coverUrl);
       

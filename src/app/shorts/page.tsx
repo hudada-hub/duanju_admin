@@ -95,12 +95,35 @@ export default function ShortsPage() {
   // 管理章节相关状态
   const [chapterModalVisible, setChapterModalVisible] = useState(false);
   const [selectedShortId, setSelectedShortId] = useState<number | null>(null);
+  
+  // 筛选参数状态
+  const [filterParams, setFilterParams] = useState({
+    isFree: undefined as boolean | undefined,
+    isDeleted: undefined as boolean | undefined,
+    categoryId: undefined as number | undefined,
+    directionId: undefined as number | undefined,
+  });
 
   // 获取短剧列表
-  const fetchShorts = async (page = currentPage, size = pageSize, keyword = searchKeyword) => {
+  const fetchShorts = async (
+    page = currentPage, 
+    size = pageSize, 
+    keyword = searchKeyword,
+    isFree?: boolean,
+    isDeleted?: boolean,
+    categoryId?: number,
+    directionId?: number
+  ) => {
     setLoading(true);
     try {
-      const res = await request(`/shorts?page=${page}&pageSize=${size}&keyword=${keyword}`);
+      let url = `/shorts?page=${page}&pageSize=${size}`;
+      if (keyword) url += `&keyword=${keyword}`;
+      if (isFree !== undefined) url += `&isFree=${isFree}`;
+      if (isDeleted !== undefined) url += `&isDeleted=${isDeleted}`;
+      if (categoryId) url += `&categoryId=${categoryId}`;
+      if (directionId) url += `&directionId=${directionId}`;
+      
+      const res = await request(url);
       // 修复数据结构解析
       setShorts(res.data.data || []);
       setTotal(res.data.pagination?.total || 0);
@@ -368,7 +391,19 @@ export default function ShortsPage() {
             try {
               await request(`/shorts/${record.id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ isFree: checked })
+                body: JSON.stringify({ 
+                  title: record.title,
+                  coverUrl: record.coverUrl,
+                  description: record.description,
+                  instructor: record.instructor,
+                  directionId: record.direction.id,
+                  categoryId: record.category.id,
+                  status: record.status,
+                  tags: record.tags,
+                  isFree: checked,
+                  isTop: record.isTop,
+                  isHidden: record.isHidden
+                })
               });
               // 刷新列表
               fetchShorts();
@@ -457,8 +492,6 @@ export default function ShortsPage() {
             </Space>
             
             <Space>
-            
-              
               {/* 新增短剧按钮 */}
               <Button 
                 type="primary" 
@@ -468,6 +501,104 @@ export default function ShortsPage() {
                 新增短剧
               </Button>
             </Space>
+          </div>
+
+          {/* 筛选区域 */}
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-wrap items-end gap-4">
+              {/* 是否免费筛选 */}
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">是否免费</label>
+                <Select
+                  placeholder="全部"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={filterParams.isFree}
+                  onChange={(value) => setFilterParams(prev => ({ ...prev, isFree: value }))}
+                >
+                  <Select.Option value={true}>免费</Select.Option>
+                  <Select.Option value={false}>付费</Select.Option>
+                </Select>
+              </div>
+
+              {/* 是否删除筛选 */}
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">删除状态</label>
+                <Select
+                  placeholder="全部"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={filterParams.isDeleted}
+                  onChange={(value) => setFilterParams(prev => ({ ...prev, isDeleted: value }))}
+                >
+                  <Select.Option value={false}>正常</Select.Option>
+                  <Select.Option value={true}>已删除</Select.Option>
+                </Select>
+              </div>
+
+              {/* 短剧分类筛选 */}
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">短剧分类</label>
+                <Select
+                  placeholder="全部"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={filterParams.categoryId}
+                  onChange={(value) => setFilterParams(prev => ({ ...prev, categoryId: value }))}
+                >
+                  {categories.map(category => (
+                    <Select.Option key={category.id} value={category.id}>
+                      {category.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* 短剧方向筛选 */}
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">短剧方向</label>
+                <Select
+                  placeholder="全部"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={filterParams.directionId}
+                  onChange={(value) => setFilterParams(prev => ({ ...prev, directionId: value }))}
+                >
+                  {directions.map(direction => (
+                    <Select.Option key={direction.id} value={direction.id}>
+                      {direction.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* 搜索和重置按钮 */}
+              <div className="flex gap-2">
+                <Button 
+                  type="primary" 
+                  onClick={() => {
+                    setCurrentPage(1);
+                    fetchShorts(1, pageSize, searchKeyword, filterParams.isFree, filterParams.isDeleted, filterParams.categoryId, filterParams.directionId);
+                  }}
+                >
+                  搜索
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setFilterParams({
+                      isFree: undefined,
+                      isDeleted: undefined,
+                      categoryId: undefined,
+                      directionId: undefined
+                    });
+                    setCurrentPage(1);
+                    fetchShorts(1, pageSize, searchKeyword);
+                  }}
+                >
+                  重置
+                </Button>
+              </div>
+            </div>
           </div>
 
           <Table

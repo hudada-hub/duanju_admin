@@ -52,6 +52,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         instructor: data.instructor,
         status: data.status,
         tags: data.tags || [], // 确保tags是数组
+        isFree: data.isFree, // 是否免费
+        isTop: data.isTop, // 是否置顶
+        isHidden: data.isHidden, // 是否隐藏
         // 使用关系连接而不是直接的外键ID
         direction: {
           connect: { id: data.directionId }

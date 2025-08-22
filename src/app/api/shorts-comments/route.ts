@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             avatar: true
           }
         },
-        short: {
+        shorts: {
           select: {
             id: true,
             title: true

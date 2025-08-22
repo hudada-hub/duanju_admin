@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { ResponseUtil } from '@/utils/response';
 import { verifyAuth } from '@/utils/auth';
 
-// 获取用户创建的短剧列表
+// 获取短剧列表（管理员可查看所有，普通用户只能查看自己的）
 export async function GET(request: NextRequest) {
   try {
     const { user } = await verifyAuth(request);
@@ -15,14 +15,27 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('pageSize') || '12');
     const keyword = searchParams.get('keyword') || '';
+    const isFree = searchParams.get('isFree');
+    const isDeleted = searchParams.get('isDeleted');
     const categoryId = searchParams.get('categoryId');
     const directionId = searchParams.get('directionId');
 
     // 构建查询条件
-    const where: any = {
-      uploaderId: user.id, // 只获取当前用户创建的短剧
-      isDeleted: false, // 排除已删除的短剧
-    };
+    const where: any = {};
+    
+    // 普通用户只能查看自己的短剧，管理员可查看所有
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+      where.uploaderId = user.id;
+    }
+    
+    // 默认不显示已删除的短剧，除非明确筛选
+    if (isDeleted === undefined) {
+      where.isDeleted = false;
+    } else if (isDeleted === 'true') {
+      where.isDeleted = true;
+    } else if (isDeleted === 'false') {
+      where.isDeleted = false;
+    }
 
     // 关键词搜索
     if (keyword) {
@@ -31,6 +44,12 @@ export async function GET(request: NextRequest) {
         { description: { contains: keyword } },
         { summary: { contains: keyword } },
       ];
+    }
+
+
+    // 是否免费筛选
+    if (isFree != undefined && isFree !== '') {
+      where.isFree = isFree === 'true';
     }
 
     // 分类筛选
@@ -42,6 +61,8 @@ export async function GET(request: NextRequest) {
     if (directionId) {
       where.directionId = parseInt(directionId);
     }
+
+    console.log(where,'where')
 
     // 查询总数
     const total = await prisma.short.count({ where });
@@ -100,9 +121,7 @@ export async function POST(request: NextRequest) {
       instructor,
       categoryId,
       directionId,
-      oneTimePayment = false, // 添加一次性支付字段
-      oneTimePoint = 0, // 添加一次性支付积分字段
-      shortsware = null, // 添加课件字段
+     
     } = data;
 
     // 创建短剧
