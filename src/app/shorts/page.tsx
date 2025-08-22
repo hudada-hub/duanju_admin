@@ -28,20 +28,13 @@ interface Short {
   description: string;
   instructor: string;
   viewCount: number;
-  studentCount: number;
-  watermarkType: 'IMAGE' | 'TEXT';
-  watermarkContent: string;
-  watermarkPosition: 'FULLSCREEN' | 'MOVING' | 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_RIGHT' | 'BOTTOM_LEFT';
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+ 
   status: 'COMPLETED' | 'ONGOING';
   episodeCount: number;
   totalDuration: number;
   tags: string[];
-  targetAudience: string;
-  ratingScore: number;
   likeCount: number;
   favoriteCount: number;
-  courseGoals: string;
   isTop: boolean;
   isDeleted: boolean;
   isHidden: boolean;
@@ -66,7 +59,7 @@ interface Direction {
   name: string;
 }
 
-// 新增课程弹窗使用的课程数据类型
+// 新增短剧弹窗使用的短剧数据类型
 interface ShortForModal {
   id?: number;
   title: string;
@@ -74,13 +67,9 @@ interface ShortForModal {
   description: string;
   categoryId?: number;
   directionId?: number;
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-  targetAudience: string;
-  courseGoals: string;
+
   coverUrl: string;
-  watermarkType?: 'IMAGE' | 'TEXT';
-  watermarkContent?: string;
-  watermarkPosition?: 'FULLSCREEN' | 'MOVING' | 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_RIGHT' | 'BOTTOM_LEFT';
+
   oneTimePayment: boolean;
   oneTimePoint: number;
   courseware: any[];
@@ -187,13 +176,9 @@ export default function ShortsPage() {
       description: record.description,
       categoryId: record.category?.id,
       directionId: record.direction?.id,
-      level: record.level,
-      targetAudience: record.targetAudience,
-      courseGoals: record.courseGoals,
+   
       coverUrl: record.coverUrl,
-      watermarkType: record.watermarkType,
-      watermarkContent: record.watermarkContent,
-      watermarkPosition: record.watermarkPosition,
+  
       oneTimePayment: false, // 默认值
       oneTimePoint: 0, // 默认值
       courseware: [] // 默认空数组
@@ -210,7 +195,7 @@ export default function ShortsPage() {
 
   // 短剧操作成功后的回调
   const handleShortSuccess = () => {
-    fetchShorts(); // 刷新课程列表
+    fetchShorts(); // 刷新短剧列表
   };
 
   // 删除短剧
@@ -436,7 +421,7 @@ export default function ShortsPage() {
               />
             </Space>
             
-            {/* 新增课程按钮 */}
+            {/* 新增短剧按钮 */}
             <Button 
               type="primary" 
               icon={<PlusOutlined />}
@@ -591,21 +576,8 @@ export default function ShortsPage() {
                 <Input placeholder="请输入短剧标签，多个标签用英文逗号分隔" />
               </Form.Item>
 
-              <Form.Item
-                name="targetAudience"
-                label="适合人群"
-                rules={[{ required: true, message: '请输入适合人群' }]}
-              >
-                <Input.TextArea rows={4} placeholder="请输入适合人群" />
-              </Form.Item>
-
-              <Form.Item
-                name="courseGoals"
-                label="短剧目标"
-                rules={[{ required: true, message: '请输入短剧目标' }]}
-              >
-                <Input.TextArea rows={4} placeholder="请输入短剧目标" />
-              </Form.Item>
+            
+              
 
               <Form.Item
                 name="summary"
@@ -652,7 +624,7 @@ export default function ShortsPage() {
             </Form>
           </Drawer>
 
-          {/* 新增课程弹窗 */}
+          {/* 新增短剧弹窗 */}
           <AddCourseModal
             visible={addShortModalVisible}
             onClose={handleCloseAddShortModal}

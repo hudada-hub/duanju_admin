@@ -20,7 +20,7 @@ interface Direction {
 interface AddCourseModalProps {
   visible: boolean;
   onClose: () => void;
-  editingCourse?: any; // 编辑的课程数据
+  editingCourse?: any; // 编辑的短剧数据
   onSuccess?: () => void; // 操作成功后的回调函数
 }
 
@@ -42,7 +42,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
   // 添加Upload组件的ref
   const uploadRef = useRef<any>(null);
 
-  // 当编辑的课程数据变化时，设置表单数据
+  // 当编辑的短剧数据变化时，设置表单数据
   useEffect(() => {
     console.log(editingCourse);
     if (editingCourse) {
@@ -52,13 +52,8 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
         description: editingCourse.description,
         categoryId: editingCourse.categoryId,
         directionId: editingCourse.directionId,
-        level: editingCourse.level,
-        targetAudience: editingCourse.targetAudience,
-        courseGoals: editingCourse.courseGoals,
         coverUrl: editingCourse.coverUrl,
-        watermarkType: editingCourse.watermarkType,
-        watermarkContent: editingCourse.watermarkContent,
-        watermarkPosition: editingCourse.watermarkPosition,
+      
         oneTimePayment: editingCourse.oneTimePayment || false, // 添加一次性支付字段
         oneTimePoint: editingCourse.oneTimePoint || 0, // 添加一次性支付积分字段
       });
@@ -119,15 +114,15 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
       };
       
       if (editingCourse) {
-        // 编辑课程
+        // 编辑短剧
         await request(`/courses/${editingCourse.id}`, {
           method: 'PUT',
           body: JSON.stringify(submitData),
         });
         Swal.fire({
           icon: 'success',
-          title: '课程编辑成功',
-          text: '课程信息已成功更新',
+          title: '短剧编辑成功',
+          text: '短剧信息已成功更新',
           showConfirmButton: false,
           timer: 3000,
           timerProgressBar: true,
@@ -135,15 +130,15 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
           toast: true
         });
       } else {
-        // 创建课程
+        // 创建短剧
         await request('/user/courses', {
           method: 'POST',
           body: JSON.stringify(submitData),
         });
         Swal.fire({
           icon: 'success',
-          title: '课程添加成功',
-          text: '课程已成功创建',
+          title: '短剧添加成功',
+          text: '短剧已成功创建',
           showConfirmButton: false,
           timer: 3000,
           timerProgressBar: true,
@@ -167,7 +162,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
     } catch (error) {
       Swal.fire({
         icon: 'error',
-        title: editingCourse ? '课程编辑失败' : '课程添加失败',
+        title: editingCourse ? '短剧编辑失败' : '短剧添加失败',
         text: '请稍后重试',
         showConfirmButton: false,
         timer: 3000,
@@ -182,7 +177,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
 
   return (
     <Modal
-      title={editingCourse ? '编辑课程' : '添加课程'}
+      title={editingCourse ? '编辑短剧' : '添加短剧'}
       open={visible}
       onCancel={onClose}
       footer={null}
@@ -195,7 +190,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
       >
         {/* 添加封面上传 */}
         <Form.Item
-          label="课程封面"
+          label="短剧封面"
           required
           help="建议尺寸: 800x450px，支持jpg、png格式"
         >
@@ -250,27 +245,27 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
 
         <Form.Item
           name="title"
-          label="课程标题"
-          rules={[{ required: true, message: '请输入课程标题' }]}
+          label="短剧标题"
+          rules={[{ required: true, message: '请输入短剧标题' }]}
         >
-          <Input placeholder="请输入课程标题" />
+          <Input placeholder="请输入短剧标题" />
         </Form.Item>
 
         <Form.Item
           name="instructor"
-          label="讲师"
-          rules={[{ required: true, message: '请输入讲师姓名' }]}
+          label="导演"
+          rules={[{ required: true, message: '请输入导演姓名' }]}
         >
           <Input placeholder="请输入讲师姓名" />
         </Form.Item>
 
         <Form.Item
           name="categoryId"
-          label="课程分类"
-          rules={[{ required: true, message: '请选择课程分类' }]}
+          label="短剧分类"
+          rules={[{ required: true, message: '请选择短剧分类' }]}
         >
           <Select
-            placeholder="请选择课程分类"
+            placeholder="请选择短剧分类"
             loading={optionsLoading}
             options={categories.map(cat => ({
               label: cat.name,
@@ -281,11 +276,11 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
 
         <Form.Item
           name="directionId"
-          label="课程方向"
-          rules={[{ required: true, message: '请选择课程方向' }]}
+          label="短剧方向"
+          rules={[{ required: true, message: '请选择短剧方向' }]}
         >
           <Select
-            placeholder="请选择课程方向"
+            placeholder="请选择短剧方向"
             loading={optionsLoading}
             options={directions.map(dir => ({
               label: dir.name,
@@ -294,46 +289,19 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
           />
         </Form.Item>
 
-        <Form.Item
-          name="level"
-          label="课程难度"
-          rules={[{ required: true, message: '请选择课程难度' }]}
-        >
-          <Select
-            placeholder="请选择课程难度"
-            options={[
-              { label: '入门', value: 'BEGINNER' },
-              { label: '初级', value: 'ELEMENTARY' },
-              { label: '中级', value: 'INTERMEDIATE' },
-              { label: '高级', value: 'ADVANCED' },
-              { label: '专家', value: 'EXPERT' },
-            ]}
-          />
-        </Form.Item>
+      
 
         <Form.Item
           name="description"
-          label="课程描述"
-          rules={[{ required: true, message: '请输入课程描述' }]}
+          label="短剧描述"
+          rules={[{ required: true, message: '请输入短剧描述' }]}
         >
-          <Input.TextArea rows={4} placeholder="请输入课程描述" />
+          <Input.TextArea rows={4} placeholder="请输入短剧描述" />
         </Form.Item>
 
-        <Form.Item
-          name="targetAudience"
-          label="适合人群"
-          rules={[{ required: true, message: '请输入适合人群' }]}
-        >
-          <Input.TextArea rows={2} placeholder="请输入适合人群，例如：零基础学习者、有一定编程基础的开发者等" />
-        </Form.Item>
+        
 
-        <Form.Item
-          name="courseGoals"
-          label="课程目标"
-          rules={[{ required: true, message: '请输入课程目标' }]}
-        >
-          <Input.TextArea rows={2} placeholder="请输入学完本课程可以达到的目标" />
-        </Form.Item>
+    
 
         <Form.Item
           name="oneTimePayment"
@@ -354,9 +322,9 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
               }
             }}
           >
-            一次性支付课程
+            一次性支付短剧
             <div className="text-sm text-gray-500 mt-1">
-              勾选后，用户必须一次性购买整个课程，无需按章节付费
+              勾选后，用户必须一次性购买整个短剧，无需按章节付费
             </div>
           </Checkbox>
         </Form.Item>
@@ -430,7 +398,7 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
         )}
 
         {/* 课件管理 */}
-        <Form.Item label="课程课件">
+        <Form.Item label="短剧课件">
           <Space direction="vertical" style={{ width: '100%' }}>
             {coursewareList.map((item, index) => (
               <Card

@@ -326,10 +326,8 @@ model Short {
   episodeCount   Int              @default(0)
   totalDuration  Int              @default(0)    // 总时长（分钟）
   tags           String[]         // 短剧标签
-  targetAudience String          @db.Text       // 适合人群
   likeCount      Int             @default(0)
   favoriteCount  Int             @default(0)
-  shortsGoals    String          @db.Text       // 短剧目标
   isTop          Boolean         @default(false) // 是否置顶
   isDeleted      Boolean         @default(false) // 是否删除
   isHidden       Boolean         @default(false) // 是否隐藏

@@ -202,7 +202,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   // 多帧抓取相关
   const multiCoverRef = useRef<{ handleCapture: () => Promise<MultiCover[]> }>(null);
   const [coverCandidates, setCoverCandidates] = useState<MultiCover[]>([]);
-  // 课程信息状态
+  // 短剧信息状态
   const [courseInfo, setCourseInfo] = useState<any>(null);
   // 添加加载状态
   const [loading, setLoading] = useState(false);
@@ -226,22 +226,22 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
     }
   }, [watermarkFile]);
 
-  // 获取课程信息
+  // 获取短剧信息
   const fetchCourseInfo = async () => {
     try {
-      const response = await request(`/duanju/${courseId}`, {
+      const response = await request(`/shorts/${courseId}`, {
         method: 'GET',
       });
       setCourseInfo(response.data);
     } catch (error) {
-      console.error('获取课程信息失败:', error);
+      console.error('获取短剧信息失败:', error);
     }
   };
 
   // 获取章节列表
   const fetchChapters = async () => {
     try {
-      const response = await request< ChapterData[]>(`/duanju/${courseId}/chapters`, {
+      const response = await request< ChapterData[]>(`/shorts/${courseId}/chapters`, {
         method: 'GET',
       });
       console.log(response.data,'response.data.data')
@@ -309,7 +309,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       title: '积分设置',
       key: 'pointsInfo',
       render: (_: any, record: ChapterData) => {
-        // 如果课程是一次性支付，显示无需设置积分
+        // 如果短剧是一次性支付，显示无需设置积分
         if (courseInfo?.oneTimePayment) {
           return <span className="text-gray-500">无需设置积分</span>;
         }
@@ -445,17 +445,17 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
 
       // 如果用户确认删除
       if (result.isConfirmed) {
-        await request(`/duanju/${courseId}/chapters/${id}`, {
+        await request(`/shorts/${courseId}/chapters/${id}`, {
           method: 'DELETE',
         });
         
-        // 更新课程总时长
+        // 更新短剧总时长
         try {
-          await request(`/duanju/${courseId}/update-total-duration`, {
+          await request(`/shorts/${courseId}/update-total-duration`, {
             method: 'POST',
           });
         } catch (error) {
-          console.error('更新课程总时长失败:', error);
+          console.error('更新短剧总时长失败:', error);
         }
         
         Swal.fire({
@@ -520,7 +520,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
       console.log(coverUrl,'coverUrl')
      
       if (editingChapter) {
-        await request(`/duanju/${courseId}/chapters/${editingChapter.id}`, {
+        await request(`/shorts/${courseId}/chapters/${editingChapter.id}`, {
           method: 'PUT',
           body: JSON.stringify(data),
         });
@@ -534,7 +534,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
           toast: true
         });
       } else {
-        await request(`/duanju/${courseId}/chapters`, {
+        await request(`/shorts/${courseId}/chapters`, {
           method: 'POST',
           body: JSON.stringify(data),
         });
@@ -549,13 +549,13 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
         });
       }
 
-      // 更新课程总时长
+      // 更新短剧总时长
       try {
-        await request(`/duanju/${courseId}/update-total-duration`, {
+        await request(`/shorts/${courseId}/update-total-duration`, {
           method: 'POST',
         });
       } catch (error) {
-        console.error('更新课程总时长失败:', error);
+        console.error('更新短剧总时长失败:', error);
       }
 
       setIsSubChapterModalOpen(false);
@@ -594,7 +594,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   return (
     <>
       <Modal
-        title="课程章节管理"
+        title="短剧章节管理"
         open={open}
         onCancel={onCancel}
         width={1200}
@@ -644,7 +644,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
             <Input.TextArea />
           </Form.Item> */}
 
-          {/* 父章节的积分设置 - 仅当课程不是一次性支付时显示 */}
+          {/* 父章节的积分设置 - 仅当短剧不是一次性支付时显示 */}
           {!selectedParentId && !courseInfo?.oneTimePayment && (
             <>
               <Form.Item
@@ -682,7 +682,7 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
             </>
           )}
 
-          {/* 子章节的积分设置 - 仅当课程不是一次性支付且父章节未选择总积分时显示 */}
+          {/* 子章节的积分设置 - 仅当短剧不是一次性支付且父章节未选择总积分时显示 */}
           {selectedParentId && !courseInfo?.oneTimePayment && !parentChapterInfo?.selectTotalPoints && (
           <Form.Item
             name="points"
@@ -702,11 +702,11 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
             </div>
           )}
 
-          {/* 当课程是一次性支付时，显示提示信息 */}
+          {/* 当短剧是一次性支付时，显示提示信息 */}
           {courseInfo?.oneTimePayment && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
               <p className="text-green-700 text-sm">
-                该课程已设置为一次性支付，无需设置章节积分
+                该短剧已设置为一次性支付，无需设置章节积分
               </p>
             </div>
           )}

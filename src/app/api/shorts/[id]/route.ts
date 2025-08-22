@@ -6,7 +6,7 @@ import { ResponseUtil } from "@/utils/response";
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const course = await prisma.course.findUnique({
+    const short = await prisma.short.findUnique({
       where: { id: parseInt(id) },
       include: {
         category: true,
@@ -19,11 +19,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       }
     });
 
-    if (!course) {
+    if (!short) {
       return ResponseUtil.error('短剧不存在');
     }
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
     return ResponseUtil.error('获取短剧详情失败');
   } 
@@ -36,19 +36,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const data = await request.json();
 
     // 必填字段验证
-    const requiredFields = ['title', 'coverUrl', 'description', 'instructor', 'directionId', 'categoryId', 'level', 'watermarkType', 'watermarkContent', 'watermarkPosition'];
+    const requiredFields = ['title', 'coverUrl', 'description', 'instructor', 'directionId', 'categoryId'];
     for (const field of requiredFields) {
       if (!data[field]) {
         return ResponseUtil.error(`${field}不能为空`);
       }
     }
 
-    const course = await prisma.course.update({
+    const short = await prisma.short.update({
       where: { id: parseInt(id) },
       data: {
         ...data,
         tags: data.tags || [], // 确保tags是数组
-        textFormat: data.textFormat || {}, // 确保textFormat是对象
+        shortsware: data.shortsware || {}, // 确保shortsware是对象
       },
       include: {
         category: true,
@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     });
 
-    return ResponseUtil.success(course);
+    return ResponseUtil.success(short);
   } catch (error) {
     return ResponseUtil.error('更新短剧失败');
   } 
@@ -67,7 +67,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   try {
     const { id } = await params;
 
-    await prisma.course.update({
+    await prisma.short.update({
       where: { id: parseInt(id) },
       data: { isDeleted: true }
     });

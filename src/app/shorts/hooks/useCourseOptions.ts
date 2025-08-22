@@ -21,8 +21,8 @@ export function useCourseOptions() {
     try {
       setLoading(true);
       const [categoriesRes, directionsRes] = await Promise.all([
-        request('/duanju/categories', { method: 'GET' }),
-        request('/duanju/directions', { method: 'GET' }),
+        request('/shorts-categories', { method: 'GET' }),
+        request('/shorts-directions', { method: 'GET' }),
       ]);
 
       setCategories(categoriesRes.data as Category[]);

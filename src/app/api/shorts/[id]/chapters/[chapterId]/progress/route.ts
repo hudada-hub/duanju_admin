@@ -25,7 +25,7 @@ export async function POST(
       return ResponseUtil.error('进度值无效，必须在0-100之间');
     }
 
-    // 查找用户的课程订单记录
+    // 查找用户的短剧订单记录
     const courseOrder = await prisma.courseOrder.findFirst({
       where: {
         userId: user.id,
@@ -33,14 +33,14 @@ export async function POST(
         OR: [
           // 检查是否有该章节的单独订单
           { chapterId: chapterIdNum },
-          // 检查是否有一次性购买整个课程的订单
+          // 检查是否有一次性购买整个短剧的订单
           { oneTimePayment: true, chapterId: null }
         ],
       },
     });
 
     if (!courseOrder) {
-      return ResponseUtil.error('您尚未购买该章节或课程');
+      return ResponseUtil.error('您尚未购买该章节或短剧');
     }
 
     // 使用事务同时更新学习进度和用户学习时长
@@ -97,7 +97,7 @@ export async function GET(
         OR: [
           // 检查是否有该章节的单独订单
           { chapterId: chapterIdNum },
-          // 检查是否有一次性购买整个课程的订单
+          // 检查是否有一次性购买整个短剧的订单
           { oneTimePayment: true, chapterId: null }
         ],
       },
