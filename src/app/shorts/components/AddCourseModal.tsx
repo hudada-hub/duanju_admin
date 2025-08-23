@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Form, Input, Button, Space, Upload, Select, Checkbox, Card, Popconfirm } from 'antd';
 import Swal from 'sweetalert2';
 import { Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { request } from '@/utils/request';
 import { useCourseOptions } from '../hooks/useCourseOptions';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 // 类型定义
 interface Category {
@@ -33,9 +34,6 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
 
   const { categories, directions, loading: optionsLoading } = useCourseOptions();
   
-  // 添加Upload组件的ref
-  const uploadRef = useRef<any>(null);
-
   // 当编辑的短剧数据变化时，设置表单数据
   useEffect(() => {
     console.log(editingCourse);
@@ -61,9 +59,10 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
       form.resetFields();
       setCoverUrl('');
      
-      if (uploadRef.current) {
-        uploadRef.current.fileList = [];
-      }
+      // 重置Upload组件
+      // if (uploadRef.current) {
+      //   uploadRef.current.fileList = [];
+      // }
     }
   }, [editingCourse, form]);
 
@@ -132,9 +131,9 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
       setCoverUrl('');
       // setCoursewareList([]); // 已移除课件功能
       // 重置Upload组件
-      if (uploadRef.current) {
-        uploadRef.current.fileList = [];
-      }
+      // if (uploadRef.current) {
+      //   uploadRef.current.fileList = [];
+      // }
       onClose();
       
       // 调用成功回调函数
@@ -173,64 +172,22 @@ export default function AddCourseModal({ visible, onClose, editingCourse, onSucc
         {/* 添加封面上传 */}
         <Form.Item
           label="短剧封面"
+          name="coverUrl"
           required
           help="建议尺寸: 800x450px，支持jpg、png格式"
+          rules={[{ required: true, message: '请上传短剧封面' }]}
         >
-          <Upload
-            ref={uploadRef}
-            action="/api/common/upload"
-            listType="picture-card"
-            maxCount={1}
-            accept=".jpg,.jpeg,.png"
-            fileList={coverUrl ? [{
-              uid: '-1',
-              name: 'cover.jpg',
-              status: 'done',
-              url: coverUrl,
-            }] : []}
-            onChange={(info) => {
-              console.log(info);
-              if (info.file.status === 'done') {
-                Swal.fire({
-                  icon: 'success',
-                  title: '上传成功',
-                  text: `${info.file.name} 已成功上传`,
-                  showConfirmButton: false,
-                  timer: 3000,
-                  timerProgressBar: true,
-                  position: 'top-end',
-                  toast: true
-                });
-             
-                setCoverUrl(info.file.response.data.url);
-              } else if (info.file.status === 'error') {
-                Swal.fire({
-                  icon: 'error',
-                  title: '上传失败',
-                  text: `${info.file.name} 上传失败，请重试`,
-                  showConfirmButton: false,
-                  timer: 3000,
-                  timerProgressBar: true,
-                  position: 'top-end',
-                  toast: true
-                });
-              } else if (info.file.status === 'removed') {
-                setCoverUrl('');
-              }
+          <ImageUpload
+            value={coverUrl}
+            onChange={(url) => {
+              setCoverUrl(url);
+              form.setFieldValue('coverUrl', url);
             }}
-            onRemove={() => {
-              setCoverUrl('');
-              return true;
-            }}
-          >
-           
-              <div className="flex flex-col items-center justify-center">
-                <ImageIcon className="w-6 h-6 mb-2" />
-                <div>点击上传</div>
-              </div>
-          
-          </Upload>
-
+            width={128}
+            height={80}
+            placeholder="点击上传封面"
+            required={true}
+          />
         </Form.Item>
 
         <Form.Item

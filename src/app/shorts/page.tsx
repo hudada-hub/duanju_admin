@@ -17,9 +17,9 @@ import AddCourseModal from './components/AddCourseModal';
 // 导入ChapterModal组件
 import ChapterModal from './components/ChapterModal';
 import AdminLayout from '../components/layout/AdminLayout';
-import { FileUpload } from '@/components/ui/upload';
 import { CosImage } from '../components/common/CosImage';
 import {ShortStatus} from '@prisma/client';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface Short {
   id: number;
@@ -164,12 +164,7 @@ export default function ShortsPage() {
     form.setFieldsValue({
       ...record,
       tags: record.tags.join(','), // 将数组转换为逗号分隔的字符串
-      coverUrl: [{
-        uid: '-1',
-        name: 'cover.png',
-        status: 'done',
-        url: record.coverUrl,
-      }]
+      coverUrl: record.coverUrl // 直接设置封面URL字符串
     });
     setDrawerVisible(true);
   };
@@ -178,7 +173,7 @@ export default function ShortsPage() {
   const handleAdd = () => {
     setEditingShort(null);
     form.resetFields();
-    form.setFieldValue('coverUrl', []); // 确保清空封面
+    form.setFieldValue('coverUrl', ''); // 确保清空封面URL
     setDrawerVisible(true);
   };
 
@@ -261,20 +256,19 @@ export default function ShortsPage() {
     try {
       const values = await form.validateFields();
       // 处理tags，将逗号分隔的字符串转换为数组
-      values.tags = values.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean);
+      if (values.tags) {
+        values.tags = values.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean);
+      }
       
-      // 处理封面URL
-      const coverFile = form.getFieldValue('coverUrl')?.[0];
-      // values.coverUrl = coverFile?.response?.data?.url || coverFile?.url;
-
-      let coverUrl = form.getFieldValue('coverUrl')?.[0]?.url;
-      delete coverUrl.file.thumbUrl;
-      delete coverUrl.fileList[0].thumbUrl;
-      console.log(coverUrl,'222');
-      if (!values.coverUrl) {
+      // 获取封面URL
+      const coverUrl = form.getFieldValue('coverUrl');
+      if (!coverUrl) {
         const Swal = (await import('sweetalert2')).default;
         return Swal.fire('错误', '请上传短剧封面', 'error');
       }
+      
+      // 确保coverUrl字段正确设置
+      values.coverUrl = coverUrl;
       
       if (editingShort) {
         // 编辑
@@ -309,6 +303,7 @@ export default function ShortsPage() {
       title: '短剧标题',
       dataIndex: 'title',
       ellipsis: true,
+      width: 100,
     },
     {
       title: '封面',
@@ -689,16 +684,17 @@ export default function ShortsPage() {
               <Form.Item
                 label="短剧封面"
                 name="coverUrl"
-                rules={[{  message: '请上传短剧封面' }]}
+                rules={[{ required: true, message: '请上传短剧封面' }]}
               >
-                <FileUpload 
-                  accept="image/*"
-                  buttonText="上传封面"
-                  onUploadSuccess={(url) => {
-                    console.log(url,'111');
+                <ImageUpload
+                  value={form.getFieldValue('coverUrl')}
+                  onChange={(url) => {
                     form.setFieldValue('coverUrl', url);
                   }}
-                  listType="picture-card"
+                  width={128}
+                  height={80}
+                  placeholder="点击上传封面"
+                  required={true}
                 />
               </Form.Item>
 
@@ -735,18 +731,6 @@ export default function ShortsPage() {
                       {direction.name}
                     </Select.Option>
                   ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="level"
-                label="难度等级"
-                rules={[{ required: true, message: '请选择难度等级' }]}
-              >
-                <Select placeholder="请选择难度等级">
-                  <Select.Option value="BEGINNER">初级</Select.Option>
-                  <Select.Option value="INTERMEDIATE">中级</Select.Option>
-                  <Select.Option value="ADVANCED">高级</Select.Option>
                 </Select>
               </Form.Item>
 
@@ -814,10 +798,7 @@ export default function ShortsPage() {
                 label="是否置顶"
                 valuePropName="checked"
               >
-                <Select>
-                  <Select.Option value={true}>是</Select.Option>
-                  <Select.Option value={false}>否</Select.Option>
-                </Select>
+                <Switch />
               </Form.Item>
 
               <Form.Item
@@ -825,10 +806,7 @@ export default function ShortsPage() {
                 label="是否隐藏"
                 valuePropName="checked"
               >
-                <Select>
-                  <Select.Option value={true}>是</Select.Option>
-                  <Select.Option value={false}>否</Select.Option>
-                </Select>
+                <Switch />
               </Form.Item>
             </Form>
           </Drawer>
