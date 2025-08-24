@@ -17,11 +17,23 @@ export async function GET(
     const { id } = await params;
     const shortsId = parseInt(id);
 
+    // 获取查询参数
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const skip = (page - 1) * pageSize;
+
+    // 获取总数
+    const total = await prisma.shortsChapter.count({
+      where: {
+        shortsId: shortsId,
+      },
+    });
+
     // 获取章节列表（包含层级结构）
     const chapters = await prisma.shortsChapter.findMany({
       where: {
         shortsId: shortsId,
-        // 根据 schema 调整查询条件
       },
       include: {
         uploader: {
@@ -35,9 +47,20 @@ export async function GET(
       orderBy: {
         sort: 'asc',
       },
+      skip,
+      take: pageSize,
     });
 
-    return ResponseUtil.success(chapters);
+    // 返回分页数据
+    return ResponseUtil.success({
+      data: chapters,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   } catch (error) {
     console.error('获取章节列表失败:', error);
     return ResponseUtil.error('获取章节列表失败');

@@ -235,27 +235,39 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
     }
   };
 
+  // 添加分页状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+
   // 获取章节列表
-  const fetchChapters = async () => {
+  const fetchChapters = async (page = currentPage, size = pageSize) => {
     try {
-      const response = await request< ChapterData[]>(`/shorts/${courseId}/chapters`, {
+      const response = await request< ChapterData[]>(`/shorts/${courseId}/chapters?page=${page}&pageSize=${size}`, {
         method: 'GET',
       });
       console.log(response.data,'response.data.data')
       
-      // 按照sort字段排序
-      const sortedChapters = response.data.sort((a:any, b:any) => {
-        // 首先按sort字段排序
-        if (a.sort !== b.sort) {
-          return a.sort - b.sort;
-        }
-        // 如果sort相同，按创建时间排序
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      });
+      // 检查是否有分页数据
+      if (response.data.pagination) {
+        setChapters(response.data.data || []);
+        setTotal(response.data.pagination.total || 0);
+        setCurrentPage(response.data.pagination.page || 1);
+        setPageSize(response.data.pagination.pageSize || 10);
+      } else {
+        // 兼容旧版本API，直接使用数组数据
+        const sortedChapters = response.data.sort((a:any, b:any) => {
+          if (a.sort !== b.sort) {
+            return a.sort - b.sort;
+          }
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        setChapters(sortedChapters);
+        setTotal(sortedChapters.length);
+      }
       
-      setChapters(sortedChapters);
       // 更新展开的行
-      const keys = sortedChapters.map((chapter:any)  => chapter.id);
+      const keys = (response.data.data || response.data).map((chapter:any)  => chapter.id);
       setExpandedKeys(keys);
     } catch (error) {
       console.log(error,'error')
@@ -284,10 +296,17 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
   const refreshChapters = async () => {
     setLoading(true);
     try {
-      await fetchChapters();
+      await fetchChapters(currentPage, pageSize);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 处理分页变化
+  const handlePageChange = (page: number, size: number) => {
+    setCurrentPage(page);
+    setPageSize(size);
+    fetchChapters(page, size);
   };
 
   // 表格列定义
@@ -583,13 +602,20 @@ const ChapterModal: React.FC<ChapterModalProps> = ({ open, onCancel, courseId })
           columns={columns}
           dataSource={chapters}
           rowKey="id"
-          pagination={false}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            onChange: handlePageChange,
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
           locale={{
             emptyText: loading ? '加载中...' : '暂无章节数据'
           }}
           expandable={{
             expandedRowKeys: expandedKeys,
-            onExpandedRowsChange: (keys) => setExpandedKeys(keys as number[]),
+            onExpandedRowsChange: (keys: readonly React.Key[]) => setExpandedKeys(keys as number[]),
             childrenColumnName: 'children'
           }}
         />

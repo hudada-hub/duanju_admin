@@ -13,7 +13,7 @@ const CONFIG = {
   // 随机选择状态：COMPLETED 或 ONGOING
   getRandomStatus: () => Math.random() < 0.5 ? 'COMPLETED' : 'ONGOING',
   MAX_RETRIES: 3,
-  RETRY_DELAY: 100
+  RETRY_DELAY: 1000
 };
 
 // 创建axios实例
@@ -258,159 +258,6 @@ function scanVideoFiles(folderPath) {
 }
 
 /**
- * 获取视频文件时长（秒）
- * @param {string} videoPath 视频文件完整路径
- * @returns {number} 视频时长（秒）
- */
-function getVideoDuration(videoPath) {
-  try {
-    const { execSync } = require('child_process');
-    
-    // 使用ffprobe获取视频时长
-    const command = `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${videoPath}"`;
-    const output = execSync(command, { encoding: 'utf8' });
-    
-    // 输出是秒数（可能包含小数）
-    const duration = parseFloat(output.trim());
-    
-    if (isNaN(duration)) {
-      console.log(`     ⚠️  无法获取视频时长，使用默认值: ${videoPath}`);
-      return Math.floor(Math.random() * 30) + 20; // 20-50分钟随机时长
-    }
-    
-    // 转换为整数秒数
-    return Math.floor(duration);
-    
-  } catch (error) {
-    console.log(`     ⚠️  获取视频时长失败，使用默认值: ${videoPath}`);
-    console.log(`       错误: ${error.message}`);
-    return Math.floor(Math.random() * 30) + 20; // 20-50分钟随机时长
-  }
-}
-
-/**
- * 使用FFmpeg对视频进行随机截屏
- * @param {string} videoPath 视频文件完整路径
- * @param {string} outputPath 输出图片路径
- * @returns {boolean} 是否成功
- */
-function captureVideoScreenshot(videoPath, outputPath) {
-  try {
-    const { execSync } = require('child_process');
-    
-    // 首先获取视频总时长
-    const durationCommand = `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${videoPath}"`;
-    const durationOutput = execSync(durationCommand, { encoding: 'utf8' });
-    const totalDuration = parseFloat(durationOutput.trim());
-    
-    if (isNaN(totalDuration) || totalDuration <= 0) {
-      console.log(`     ⚠️  无法获取视频时长，跳过截屏: ${videoPath}`);
-      return false;
-    }
-    
-    // 生成随机时间点（在视频的10%-90%范围内）
-    const minTime = totalDuration * 0.1;
-    const maxTime = totalDuration * 0.9;
-    const randomTime = Math.random() * (maxTime - minTime) + minTime;
-    
-    // 使用FFmpeg截屏，指定时间点
-    const screenshotCommand = `ffmpeg -y -ss ${randomTime.toFixed(2)} -i "${videoPath}" -vframes 1 -q:v 2 "${outputPath}"`;
-    
-    execSync(screenshotCommand, { stdio: 'pipe' });
-    
-    console.log(`     📸 截屏成功: ${path.basename(videoPath)} -> ${path.basename(outputPath)} (时间点: ${randomTime.toFixed(2)}秒)`);
-    return true;
-    
-  } catch (error) {
-    console.log(`     ❌ 截屏失败: ${path.basename(videoPath)}`);
-    console.log(`       错误: ${error.message}`);
-    return false;
-  }
-}
-
-/**
- * 批量生成视频截屏封面
- * @param {string} folderPath 文件夹路径
- * @param {Array} videoFiles 视频文件列表
- * @returns {Array} 成功生成的封面文件列表
- */
-function generateVideoCovers(folderPath, videoFiles) {
-  console.log(`   开始生成视频截屏封面...`);
-  
-  const generatedCovers = [];
-  
-  for (const videoFile of videoFiles) {
-    const videoPath = path.join(folderPath, videoFile);
-    const coverFileName = videoFile.replace(/\.[^/.]+$/, '.jpg');
-    const coverPath = path.join(folderPath, coverFileName);
-    
-    // 如果封面已存在，跳过
-    if (fs.existsSync(coverPath)) {
-      console.log(`     ⏭️  封面已存在，跳过: ${coverFileName}`);
-      generatedCovers.push(coverFileName);
-      continue;
-    }
-    
-    // 生成截屏封面
-    if (captureVideoScreenshot(videoPath, coverPath)) {
-      generatedCovers.push(coverFileName);
-    }
-    
-    // 使用更兼容的延迟方式，避免Windows命令问题
-    try {
-      // 尝试使用Node.js内置的延迟
-      const start = Date.now();
-      while (Date.now() - start < 100) {
-        // 等待100ms
-      }
-    } catch (error) {
-      // 如果延迟失败，继续执行
-      console.log(`     ⚠️  延迟执行失败，继续处理下一个文件`);
-    }
-  }
-  
-  console.log(`   封面生成完成: ${generatedCovers.length}/${videoFiles.length} 个`);
-  return generatedCovers;
-}
-
-/**
- * 生成短剧数据
- * @param {Object} dir 目录信息
- * @returns {Object} 短剧数据
- */
-function generateShortData(dir) {
-  const parsed = parseFolderName(dir.name);
-  
-  const shortData = {
-    title: generateTitle(dir.name),
-    instructor: generateActors(dir.name), // 可以根据需要修改
-    description: generateDescription(dir.name, dir.videoCount),
-    categoryId: CONFIG.getRandomCategoryId(),
-    directionId: CONFIG.getRandomDirectionId(),
-    status: CONFIG.getRandomStatus(),
-    coverUrl: generateCoverUrl(dir.name),
-    viewCount: Math.floor(Math.random() * 1000000),
-    episodeCount: dir.videoCount,
-    likeCount: Math.floor(Math.random() * 1000000),
-    favoriteCount: Math.floor(Math.random() * 1000000),
-    isFree: Math.random() < 0.2, // 5分之1的概率为true (0.2 = 1/5)
-    isTop: Math.random() < 0.1, // 10分之1的概率为true (0.1 = 1/10)
-    createdAt: new Date(
-      Math.floor(Math.random() * (new Date('2025-12-31').getTime() - new Date('2022-01-01').getTime())) + 
-      new Date('2022-01-01').getTime()
-    ).toISOString(),
-    uploaderId: 1,
-    updatedAt: new Date().toISOString(),
-    isDeleted: false,
-    isHidden: false,
-    totalDuration: Math.floor(Math.random() * (5 * 3600 - 2 * 3600)) + 2 * 3600, // 2小时到5小时之间的随机秒数
-    originalFolderName: dir.name // 保存原始文件夹名，用于后续创建章节
-  };
-  
-  return shortData;
-}
-
-/**
  * 创建短剧章节
  * @param {Object} shortData 短剧数据
  * @param {Array} videoFiles 视频文件列表
@@ -424,39 +271,23 @@ async function createShortChapters(shortData, videoFiles) {
   
   console.log(`   找到 ${videoFiles.length} 个视频文件，开始创建章节...`);
   
-  // 首先生成视频截屏封面
-  const folderPath = path.join(CONFIG.VIDEO_PATH, shortData.originalFolderName);
-  const generatedCovers = generateVideoCovers(folderPath, videoFiles);
-  
   const chapters = [];
   
   for (let i = 0; i < videoFiles.length; i++) {
     const videoFile = videoFiles[i];
-    const videoPath = path.join(CONFIG.VIDEO_PATH, shortData.originalFolderName, videoFile);
-    
-    // 获取真实视频时长
-    const durationSeconds = getVideoDuration(videoPath);
-    
-    // 检查对应的封面是否存在
-    const coverFileName = videoFile.replace(/\.[^/.]+$/, '.jpg');
-    const coverExists = generatedCovers.includes(coverFileName);
-    
     const chapterData = {
       title: `第${i + 1}集`,
       description: `${shortData.title} 第${i + 1}集`,
       videoUrl: `https://duanju-1258739349.cos.ap-guangzhou.myqcloud.com/${shortData.originalFolderName}/${videoFile}`,
-      coverUrl: coverExists 
-        ? `https://duanju-1258739349.cos.ap-guangzhou.myqcloud.com/${shortData.originalFolderName}/${coverFileName}`
-        : `https://duanju-1258739349.cos.ap-guangzhou.myqcloud.com/${shortData.originalFolderName}/0.jpg`, // 如果没有封面，使用默认封面
-      points: i < 20 ? 0 : Math.floor(Math.random() * 50) + 10, // 前20集免费，后面10-60积分随机
+      coverUrl: `https://duanju-1258739349.cos.ap-guangzhou.myqcloud.com/${shortData.originalFolderName}/${videoFile.replace(/\.[^/.]+$/, '.jpg')}`, // 视频对应的封面
+      points: Math.floor(Math.random() * 50) + 10, // 10-60积分随机
       sort: i + 1,
-      duration: durationSeconds // 使用真实视频时长（秒）
+      duration: Math.floor(Math.random() * 30) + 20 // 20-50分钟随机时长
     };
     
-    console.log(shortData,'shortData')
     try {
-      const response = await apiClient.post(`/shorts/${shortData.id}/chapters`, chapterData);
-      console.log(`     ✅ 章节创建成功: ${chapterData.title} (ID: ${response.data.data?.id || 'unknown'}) - 时长: ${durationSeconds}秒 - 封面: ${coverExists ? '✅' : '❌'}`);
+      const response = await apiClient.post(`/shorts/${shortData.shortsId}/chapters`, chapterData);
+      console.log(`     ✅ 章节创建成功: ${chapterData.title} (ID: ${response.data.data?.id || 'unknown'})`);
       chapters.push(response.data.data);
     } catch (error) {
       console.error(`     ❌ 章节创建失败: ${chapterData.title}`, error.message);
@@ -464,7 +295,7 @@ async function createShortChapters(shortData, videoFiles) {
     
     // 请求间隔
     if (i < videoFiles.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms间隔
+      await new Promise(resolve => setTimeout(resolve, 500)); // 500ms间隔
     }
   }
   

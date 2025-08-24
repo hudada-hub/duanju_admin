@@ -8,9 +8,8 @@
     "install-deps": "npm install"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.11.0"
   },
-  "devDependencies": {},
   "keywords": [
     "short-video",
     "batch-create",
@@ -19,4 +18,4 @@
   ],
   "author": "Your Name",
   "license": "MIT"
-} 
+}
